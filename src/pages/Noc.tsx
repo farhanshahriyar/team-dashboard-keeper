@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Edit, Trash2, Calendar as CalendarIcon } from "lucide-react";
+import { Edit, Trash2, Calendar as CalendarIcon, Download } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
@@ -84,6 +84,40 @@ export default function Noc() {
     setRecords(records.filter(record => record.id !== id));
   };
 
+  const exportToCSV = () => {
+    const headers = [
+      "Player Name",
+      "Email",
+      "Type",
+      "Start Date",
+      "End Date",
+      "Reason"
+    ];
+
+    const csvData = records.map(record => [
+      record.playerName,
+      record.email,
+      record.type,
+      format(record.startDate, "MMM dd, yyyy"),
+      format(record.endDate, "MMM dd, yyyy"),
+      record.reason
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "noc_records.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -95,10 +129,15 @@ export default function Noc() {
             </p>
           </div>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>Add NOC</Button>
-            </DialogTrigger>
+          <div className="flex gap-4">
+            <Button variant="outline" onClick={exportToCSV}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>Add NOC</Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Add New NOC Record</DialogTitle>
@@ -252,7 +291,8 @@ export default function Noc() {
                 </form>
               </Form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
