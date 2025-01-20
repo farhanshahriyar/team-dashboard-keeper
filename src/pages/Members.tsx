@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AddMemberForm } from "@/components/AddMemberForm";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Download, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 type Member = {
@@ -64,6 +64,46 @@ export default function Members() {
     setMembers(members.filter(member => member.id !== id));
   };
 
+  const exportToCSV = () => {
+    // Convert members data to CSV format
+    const headers = [
+      "Email",
+      "Real Name",
+      "Birthdate",
+      "Phone",
+      "IGN",
+      "Game Role",
+      "Discord ID",
+      "Facebook"
+    ];
+
+    const csvData = members.map(member => [
+      member.email,
+      member.realName,
+      member.birthdate,
+      member.phone,
+      member.ign,
+      member.gameRole,
+      member.discordId,
+      member.facebook
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => row.join(","))
+    ].join("\n");
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "team_members.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -73,17 +113,23 @@ export default function Members() {
             <p className="text-gray-500 mt-2">Manage your team's information</p>
           </div>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>Add Team Member</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Team Member</DialogTitle>
-              </DialogHeader>
-              <AddMemberForm onSubmit={handleAddMember} />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-4">
+            <Button variant="outline" onClick={exportToCSV}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>Add Team Member</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Team Member</DialogTitle>
+                </DialogHeader>
+                <AddMemberForm onSubmit={handleAddMember} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
