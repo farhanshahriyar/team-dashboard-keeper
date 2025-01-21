@@ -1,4 +1,4 @@
-import { Users, Calendar } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, UserCog } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +13,11 @@ import { Link } from "react-router-dom";
 
 const menuItems = [
   {
+    title: "Dashboard",
+    path: "/",
+    icon: LayoutDashboard,
+  },
+  {
     title: "NOC Management",
     path: "/noc",
     icon: Calendar,
@@ -21,6 +26,11 @@ const menuItems = [
     title: "Team Members",
     path: "/members",
     icon: Users,
+  },
+  {
+    title: "Player Management",
+    path: "/player-management",
+    icon: UserCog,
   },
 ];
 
