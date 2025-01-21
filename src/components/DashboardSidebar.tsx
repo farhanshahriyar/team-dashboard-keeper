@@ -1,4 +1,4 @@
-import { Users, Calendar, LayoutDashboard, UserCog, LogOut, CreditCard, Bell, ChevronUpDown } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, UserCog, LogOut, CreditCard, Bell, ChevronsUpDown } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -65,7 +65,7 @@ export function DashboardSidebar() {
                       <span className="text-sm font-medium">shadcn</span>
                       <span className="text-xs text-muted-foreground">m@example.com</span>
                     </div>
-                    <ChevronUpDown className="h-4 w-4 text-muted-foreground" />
+                    <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </Button>
               </DropdownMenuTrigger>
