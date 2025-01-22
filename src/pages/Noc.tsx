@@ -42,17 +42,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
+type NocType = "Leave" | "Absent" | "Noc";
+
 type NocRecord = {
   id: string;
   user_id: string;
   player_name: string;
   email: string;
-  type: "Leave" | "Absent" | "Noc";
+  type: NocType;
   start_date: string;
   end_date: string;
   reason: string;
   status: string;
   created_at: string;
+};
+
+type FormValues = {
+  player_name: string;
+  email: string;
+  type: NocType;
+  start_date: Date;
+  end_date: Date;
+  reason: string;
 };
 
 export default function Noc() {
@@ -62,11 +73,11 @@ export default function Noc() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const form = useForm({
+  const form = useForm<FormValues>({
     defaultValues: {
       player_name: "",
       email: "",
-      type: "Leave" as const,
+      type: "Leave",
       start_date: new Date(),
       end_date: new Date(),
       reason: "",
@@ -93,7 +104,14 @@ export default function Noc() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRecords(data || []);
+      
+      // Type assertion to ensure the data matches our NocRecord type
+      const typedData = data?.map(record => ({
+        ...record,
+        type: record.type as NocType
+      })) || [];
+      
+      setRecords(typedData);
     } catch (error) {
       console.error('Error fetching records:', error);
       toast({
@@ -106,16 +124,19 @@ export default function Noc() {
     }
   };
 
-  const handleSubmit = async (values: Omit<NocRecord, "id" | "user_id" | "status" | "created_at">) => {
+  const handleSubmit = async (values: FormValues) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("No session");
 
       const { error } = await supabase.from('noc_records').insert({
-        ...values,
         user_id: session.user.id,
+        player_name: values.player_name,
+        email: values.email,
+        type: values.type,
         start_date: format(values.start_date, 'yyyy-MM-dd'),
         end_date: format(values.end_date, 'yyyy-MM-dd'),
+        reason: values.reason,
       });
 
       if (error) throw error;
@@ -269,7 +290,7 @@ export default function Noc() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Type</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange as (value: string) => void} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select type" />
