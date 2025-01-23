@@ -17,55 +17,95 @@ import {
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AddMemberForm } from "@/components/AddMemberForm";
 import { Edit, Download, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { Database } from "@/integrations/supabase/types";
 
-type Member = {
-  id: number;
-  email: string;
-  realName: string;
-  birthdate: string;
-  phone: string;
-  ign: string;
-  gameRole: "duelist" | "sentinel" | "initiator" | "controller";
-  picture: string;
-  discordId: string;
-  facebook: string;
-};
-
-const initialMembers: Member[] = [
-  {
-    id: 1,
-    email: "player1@example.com",
-    realName: "John Doe",
-    birthdate: "1995-05-15",
-    phone: "+1234567890",
-    ign: "ProGamer123",
-    gameRole: "duelist",
-    picture: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7",
-    discordId: "player1#1234",
-    facebook: "https://facebook.com/john.doe",
-  },
-];
+type Member = Database['public']['Tables']['team_members']['Row'];
 
 export default function Members() {
-  const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [members, setMembers] = useState<Member[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const handleAddMember = (data: Omit<Member, "id">) => {
-    const newMember = {
-      ...data,
-      id: members.length + 1,
-    };
-    setMembers([...members, newMember]);
-    setDialogOpen(false);
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching members",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setMembers(members.filter(member => member.id !== id));
+  const handleAddMember = async (data: Omit<Member, 'id' | 'created_at' | 'user_id'>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('team_members')
+        .insert([{ ...data, user_id: user.id }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Team member added successfully",
+      });
+      
+      setDialogOpen(false);
+      fetchMembers();
+    } catch (error: any) {
+      toast({
+        title: "Error adding member",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Team member deleted successfully",
+      });
+      
+      fetchMembers();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting member",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const exportToCSV = () => {
-    // Convert members data to CSV format
     const headers = [
       "Email",
       "Real Name",
@@ -79,12 +119,12 @@ export default function Members() {
 
     const csvData = members.map(member => [
       member.email,
-      member.realName,
+      member.real_name,
       member.birthdate,
       member.phone,
       member.ign,
-      member.gameRole,
-      member.discordId,
+      member.game_role,
+      member.discord_id,
       member.facebook
     ]);
 
@@ -93,7 +133,6 @@ export default function Members() {
       ...csvData.map(row => row.join(","))
     ].join("\n");
 
-    // Create and trigger download
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -149,17 +188,23 @@ export default function Members() {
               {members.map((member) => (
                 <TableRow key={member.id}>
                   <TableCell>
-                    <img
-                      src={member.picture}
-                      alt={member.realName}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+                    {member.picture ? (
+                      <img
+                        src={member.picture}
+                        alt={member.real_name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        {member.real_name.charAt(0)}
+                      </div>
+                    )}
                   </TableCell>
-                  <TableCell className="font-medium">{member.realName}</TableCell>
+                  <TableCell className="font-medium">{member.real_name}</TableCell>
                   <TableCell>{member.email}</TableCell>
                   <TableCell>{member.ign}</TableCell>
-                  <TableCell className="capitalize">{member.gameRole}</TableCell>
-                  <TableCell>{member.discordId}</TableCell>
+                  <TableCell className="capitalize">{member.game_role}</TableCell>
+                  <TableCell>{member.discord_id}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="icon">
@@ -176,6 +221,13 @@ export default function Members() {
                   </TableCell>
                 </TableRow>
               ))}
+              {!isLoading && members.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    No team members found. Add your first member!
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

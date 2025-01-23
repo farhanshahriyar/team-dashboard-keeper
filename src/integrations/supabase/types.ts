@@ -78,6 +78,51 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          birthdate: string
+          created_at: string
+          discord_id: string
+          email: string
+          facebook: string
+          game_role: string
+          id: string
+          ign: string
+          phone: string
+          picture: string | null
+          real_name: string
+          user_id: string | null
+        }
+        Insert: {
+          birthdate: string
+          created_at?: string
+          discord_id: string
+          email: string
+          facebook: string
+          game_role: string
+          id?: string
+          ign: string
+          phone: string
+          picture?: string | null
+          real_name: string
+          user_id?: string | null
+        }
+        Update: {
+          birthdate?: string
+          created_at?: string
+          discord_id?: string
+          email?: string
+          facebook?: string
+          game_role?: string
+          id?: string
+          ign?: string
+          phone?: string
+          picture?: string | null
+          real_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
