@@ -27,6 +27,8 @@ export default function Account() {
   } | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -47,11 +49,11 @@ export default function Account() {
       if (error) throw error;
       setProfile(data);
       setNewDisplayName(data.display_name || '');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading profile:', error);
       toast({
         title: "Error loading profile",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -74,16 +76,16 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully",
+        title: "Success",
+        description: "Profile updated successfully",
       });
       setEditingName(false);
       getProfile();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
         title: "Error updating profile",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -111,11 +113,11 @@ export default function Account() {
         .getPublicUrl(filePath);
 
       await updateProfile(publicUrl);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading avatar:', error);
       toast({
         title: "Error uploading avatar",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -125,18 +127,38 @@ export default function Account() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Password updated",
-      description: "Your password has been updated successfully",
-    });
-  };
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleReportIssue = async (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Issue reported",
-      description: "Your issue has been reported successfully",
-    });
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast({
+        title: "Error updating password",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -233,6 +255,8 @@ export default function Account() {
                 <Input
                   type={showPassword ? "text" : "password"}
                   placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   className="pr-10"
                 />
                 <Button
@@ -249,6 +273,8 @@ export default function Account() {
                 <Input
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pr-10"
                 />
                 <Button
@@ -261,64 +287,9 @@ export default function Account() {
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-              <Button type="submit">Update Password</Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Report an Issue</CardTitle>
-            <CardDescription>Let us know if you're having any problems</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleReportIssue} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Area</label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select area" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dashboard">Dashboard</SelectItem>
-                      <SelectItem value="noc">NOC Management</SelectItem>
-                      <SelectItem value="members">Team Members</SelectItem>
-                      <SelectItem value="players">Player Management</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Security Level</label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select severity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Severity 1</SelectItem>
-                      <SelectItem value="2">Severity 2</SelectItem>
-                      <SelectItem value="3">Severity 3</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Subject</label>
-                <Input placeholder="I need help with..." />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
-                <Textarea
-                  placeholder="Please include all information relevant to your issue."
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" type="button">
-                  Cancel
-                </Button>
-                <Button type="submit">Submit</Button>
-              </div>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Updating..." : "Update Password"}
+              </Button>
             </form>
           </CardContent>
         </Card>
