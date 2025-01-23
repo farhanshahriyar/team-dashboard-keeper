@@ -9,6 +9,7 @@ import Members from "./pages/Members";
 import Noc from "./pages/Noc";
 import Dashboard from "./pages/Dashboard";
 import PlayerManagement from "./pages/PlayerManagement";
+import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <PlayerManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <Account />
                 </ProtectedRoute>
               }
             />

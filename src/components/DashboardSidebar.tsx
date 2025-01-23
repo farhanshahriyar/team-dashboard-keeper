@@ -1,4 +1,4 @@
-import { Users, Calendar, LayoutDashboard, UserCog, LogOut, CreditCard, Bell, ChevronsUpDown } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/theme-provider";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   {
@@ -47,9 +49,28 @@ const menuItems = [
 
 export function DashboardSidebar() {
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate("/auth");
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error logging out",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
-    <Sidebar>
+    <Sidebar className="border-r border-border bg-background">
       <SidebarContent>
         <SidebarGroup>
           <div className="p-4">
@@ -61,39 +82,27 @@ export function DashboardSidebar() {
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-1 items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">shadcn</span>
-                      <span className="text-xs text-muted-foreground">m@example.com</span>
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium text-foreground">John Doe</span>
+                      <span className="text-xs text-muted-foreground">j.doe@example.com</span>
                     </div>
-                    <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="start" side="right">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Upgrade to Pro
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                  <div className="mr-2 h-4 w-4" />
                   {theme === "dark" ? "Light Mode" : "Dark Mode"}
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <UserCog className="mr-2 h-4 w-4" />
-                  Account
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Billing
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notifications
+                <DropdownMenuItem asChild>
+                  <Link to="/account">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Account Settings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
