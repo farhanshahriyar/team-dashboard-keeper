@@ -48,7 +48,9 @@ export default function Announcements() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw},
+      if (error) throw error;
+      return data;
+    }
   });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
