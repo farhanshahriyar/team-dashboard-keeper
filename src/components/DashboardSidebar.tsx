@@ -1,4 +1,4 @@
-import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -23,12 +23,18 @@ import {
 import { useTheme } from "@/components/theme-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
 
 const menuItems = [
   {
     title: "Dashboard",
     path: "/",
     icon: LayoutDashboard,
+  },
+  {
+    title: "KR Announcements",
+    path: "/announcements",
+    icon: Megaphone,
   },
   {
     title: "NOC Management",
@@ -51,6 +57,33 @@ export function DashboardSidebar() {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [profile, setProfile] = useState<{
+    email?: string;
+    display_name?: string;
+    avatar_url?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    getProfile();
+  }, []);
+
+  const getProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email, display_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error: any) {
+      console.error('Error loading profile:', error.message);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -78,13 +111,19 @@ export function DashboardSidebar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start gap-2 px-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/lovable-uploads/32fed9a0-a4c5-4965-a44d-8ce4a1e2089d.png" />
-                    <AvatarFallback>AD</AvatarFallback>
+                    <AvatarImage src={profile?.avatar_url || "/lovable-uploads/fcd52d32-7c9b-477f-803e-c19c7824c121.png"} />
+                    <AvatarFallback>
+                      {profile?.display_name?.charAt(0) || profile?.email?.charAt(0) || 'KR'}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-1 items-center justify-between">
                     <div className="flex flex-col text-left">
-                      <span className="text-sm font-medium text-foreground">John Doe</span>
-                      <span className="text-xs text-muted-foreground">j.doe@example.com</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {profile?.display_name || 'KingsRock User'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {profile?.email || 'Loading...'}
+                      </span>
                     </div>
                   </div>
                 </Button>
