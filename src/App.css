@@ -35,12 +35,8 @@
 
 .card {
   padding: 2em;
-  background: hsl(var(--card));
-  color: hsl(var(--card-foreground));
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
 }
 
 .read-the-docs {
-  color: hsl(var(--muted-foreground));
+  color: #888;
 }
