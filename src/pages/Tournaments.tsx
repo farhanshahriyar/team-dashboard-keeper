@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar, MapPin, Users } from "lucide-react";
+import { Trophy, Calendar, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import {
@@ -62,18 +62,18 @@ export default function Tournaments() {
 
       const { error } = await supabase
         .from('tournaments')
-        .insert({
-          tournament_name: formData.get('tournament_name'),
-          start_time: formData.get('start_time'),
-          location: formData.get('location'),
-          hoster: formData.get('hoster'),
-          roster: formData.get('roster'),
-          discord_link: formData.get('discord_link'),
-          tournament_link: formData.get('tournament_link'),
+        .insert([{
+          tournament_name: formData.get('tournament_name') as string,
+          start_time: formData.get('start_time') as string,
+          location: formData.get('location') as string,
+          hoster: formData.get('hoster') as string,
+          roster: formData.get('roster') as string,
+          discord_link: formData.get('discord_link') as string || null,
+          tournament_link: formData.get('tournament_link') as string || null,
           price_pool: formData.get('price_pool') ? Number(formData.get('price_pool')) : null,
           entry_fee: formData.get('entry_fee') ? Number(formData.get('entry_fee')) : null,
           user_id: user.id,
-        });
+        }]);
 
       if (error) throw error;
 
