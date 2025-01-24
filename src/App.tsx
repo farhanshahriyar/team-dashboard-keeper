@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import PlayerManagement from "./pages/PlayerManagement";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
+import Announcements from "./pages/Announcements";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Account />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/announcements"
+              element={
+                <ProtectedRoute>
+                  <Announcements />
                 </ProtectedRoute>
               }
             />

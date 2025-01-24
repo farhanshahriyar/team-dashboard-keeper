@@ -25,10 +25,31 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+
+type Announcement = {
+  id: string;
+  title: string;
+  content: string;
+  priority: string;
+  user_id: string;
+  created_at: string;
+};
 
 export default function Announcements() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const { data: announcements, refetch } = useQuery({
+    queryKey: ['announcements'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw},
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -41,9 +62,9 @@ export default function Announcements() {
       const { error } = await supabase
         .from('announcements')
         .insert({
-          title: formData.get('title'),
-          content: formData.get('content'),
-          priority: formData.get('priority'),
+          title: formData.get('title') as string,
+          content: formData.get('content') as string,
+          priority: formData.get('priority') as string,
           user_id: user.id,
         });
 
@@ -54,6 +75,7 @@ export default function Announcements() {
         description: "Announcement created successfully",
       });
       setIsDialogOpen(false);
+      refetch();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -107,37 +129,33 @@ export default function Announcements() {
       </div>
 
       <div className="space-y-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Upcoming Tournament: KingsRock Invitational</CardTitle>
-              <CardDescription>Get ready for our biggest tournament yet! Prize pool: $10,000</CardDescription>
-            </div>
-            <Badge variant="destructive">HIGH</Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <CalendarIcon className="mr-1 h-4 w-4" />
-              {format(new Date('2024-02-20'), 'PPP')}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Team Practice Schedule Update</CardTitle>
-              <CardDescription>New practice schedule for all divisions starting next week</CardDescription>
-            </div>
-            <Badge variant="default">MEDIUM</Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <CalendarIcon className="mr-1 h-4 w-4" />
-              {format(new Date('2024-02-18'), 'PPP')}
-            </div>
-          </CardContent>
-        </Card>
+        {announcements?.map((announcement) => (
+          <Card key={announcement.id}>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>{announcement.title}</CardTitle>
+                <CardDescription>{announcement.content}</CardDescription>
+              </div>
+              <Badge 
+                variant={
+                  announcement.priority === "HIGH" 
+                    ? "destructive" 
+                    : announcement.priority === "MEDIUM" 
+                    ? "default" 
+                    : "secondary"
+                }
+              >
+                {announcement.priority}
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <CalendarIcon className="mr-1 h-4 w-4" />
+                {format(new Date(announcement.created_at), 'PPP')}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </DashboardLayout>
   );
