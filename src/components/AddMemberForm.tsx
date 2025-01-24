@@ -21,12 +21,12 @@ import {
 
 const formSchema = z.object({
   email: z.string().email(),
-  realName: z.string().min(2),
+  real_name: z.string().min(2),
   birthdate: z.string(),
   phone: z.string(),
   ign: z.string().min(2),
-  gameRole: z.enum(["duelist", "sentinel", "initiator", "controller"]),
-  discordId: z.string(),
+  game_role: z.enum(["duelist", "sentinel", "initiator", "controller"]),
+  discord_id: z.string(),
   facebook: z.string().url(),
   picture: z.string().optional(),
 });
@@ -36,12 +36,12 @@ export function AddMemberForm({ onSubmit }: { onSubmit: (data: z.infer<typeof fo
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      realName: "",
+      real_name: "",
       birthdate: "",
       phone: "",
       ign: "",
-      gameRole: "duelist",
-      discordId: "",
+      game_role: "duelist",
+      discord_id: "",
       facebook: "",
       picture: "",
     },
@@ -66,7 +66,7 @@ export function AddMemberForm({ onSubmit }: { onSubmit: (data: z.infer<typeof fo
 
         <FormField
           control={form.control}
-          name="realName"
+          name="real_name"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Real Name</FormLabel>
@@ -122,7 +122,7 @@ export function AddMemberForm({ onSubmit }: { onSubmit: (data: z.infer<typeof fo
 
         <FormField
           control={form.control}
-          name="gameRole"
+          name="game_role"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Game Role</FormLabel>
@@ -146,7 +146,7 @@ export function AddMemberForm({ onSubmit }: { onSubmit: (data: z.infer<typeof fo
 
         <FormField
           control={form.control}
-          name="discordId"
+          name="discord_id"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Discord ID</FormLabel>
