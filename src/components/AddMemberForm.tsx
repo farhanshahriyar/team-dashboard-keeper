@@ -18,6 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Database } from "@/integrations/supabase/types";
+
+type Member = Database['public']['Tables']['team_members']['Row'];
+type NewMember = Omit<Member, 'id' | 'created_at' | 'user_id'>;
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -28,11 +32,11 @@ const formSchema = z.object({
   game_role: z.enum(["duelist", "sentinel", "initiator", "controller"]),
   discord_id: z.string(),
   facebook: z.string().url(),
-  picture: z.string().optional(),
+  picture: z.string(),
 });
 
-export function AddMemberForm({ onSubmit }: { onSubmit: (data: z.infer<typeof formSchema>) => void }) {
-  const form = useForm<z.infer<typeof formSchema>>({
+export function AddMemberForm({ onSubmit }: { onSubmit: (data: NewMember) => void }) {
+  const form = useForm<NewMember>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",

@@ -21,18 +21,30 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { useNavigate } from "react-router-dom";
 
 type Member = Database['public']['Tables']['team_members']['Row'];
+type NewMember = Omit<Member, 'id' | 'created_at' | 'user_id'>;
 
 export default function Members() {
   const [members, setMembers] = useState<Member[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    checkUser();
     fetchMembers();
   }, []);
+
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/auth');
+      return;
+    }
+  };
 
   const fetchMembers = async () => {
     try {
@@ -54,14 +66,17 @@ export default function Members() {
     }
   };
 
-  const handleAddMember = async (data: Omit<Member, 'id' | 'created_at' | 'user_id'>) => {
+  const handleAddMember = async (formData: NewMember) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
 
       const { error } = await supabase
         .from('team_members')
-        .insert([{ ...data, user_id: user.id }]);
+        .insert([{ ...formData, user_id: user.id }]);
 
       if (error) throw error;
 
