@@ -12,6 +12,7 @@ import PlayerManagement from "./pages/PlayerManagement";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import Announcements from "./pages/Announcements";
+import Tournaments from "./pages/Tournaments";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Announcements />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tournaments"
+              element={
+                <ProtectedRoute>
+                  <Tournaments />
                 </ProtectedRoute>
               }
             />

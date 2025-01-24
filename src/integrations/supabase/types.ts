@@ -150,6 +150,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tournaments: {
+        Row: {
+          created_at: string
+          discord_link: string | null
+          entry_fee: number | null
+          hoster: string
+          id: string
+          location: string
+          price_pool: number | null
+          roster: string
+          start_time: string
+          status: string | null
+          tournament_link: string | null
+          tournament_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discord_link?: string | null
+          entry_fee?: number | null
+          hoster: string
+          id?: string
+          location: string
+          price_pool?: number | null
+          roster: string
+          start_time: string
+          status?: string | null
+          tournament_link?: string | null
+          tournament_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discord_link?: string | null
+          entry_fee?: number | null
+          hoster?: string
+          id?: string
+          location?: string
+          price_pool?: number | null
+          roster?: string
+          start_time?: string
+          status?: string | null
+          tournament_link?: string | null
+          tournament_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

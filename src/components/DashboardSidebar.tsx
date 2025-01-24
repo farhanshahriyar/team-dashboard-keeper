@@ -1,4 +1,4 @@
-import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -50,6 +50,11 @@ const menuItems = [
     title: "Player Management",
     path: "/player-management",
     icon: UserCog,
+  },
+  {
+    title: "Tournaments",
+    path: "/tournaments",
+    icon: Trophy,
   },
 ];
 
