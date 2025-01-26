@@ -1,8 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar, MapPin } from "lucide-react";
+import { Plus, Trophy, Calendar, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import {
@@ -15,10 +13,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 type Tournament = {
   id: string;
@@ -37,6 +50,9 @@ type Tournament = {
 
 export default function Tournaments() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddingTeam, setIsAddingTeam] = useState(false);
+  const [newTeam, setNewTeam] = useState("");
+  const [teams, setTeams] = useState<string[]>(["KingsRock eSports", "KingsRock Academy"]);
   const { toast } = useToast();
 
   const { data: tournaments, refetch } = useQuery({
@@ -51,6 +67,18 @@ export default function Tournaments() {
       return data as Tournament[];
     },
   });
+
+  const handleAddTeam = () => {
+    if (newTeam.trim()) {
+      setTeams([...teams, newTeam.trim()]);
+      setNewTeam("");
+      setIsAddingTeam(false);
+      toast({
+        title: "Team added",
+        description: "New team has been added to the list",
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -126,7 +154,41 @@ export default function Tournaments() {
               </div>
               <div>
                 <Label htmlFor="roster">Roster</Label>
-                <Textarea id="roster" name="roster" required />
+                {isAddingTeam ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={newTeam}
+                      onChange={(e) => setNewTeam(e.target.value)}
+                      placeholder="Enter new team name"
+                    />
+                    <Button type="button" onClick={handleAddTeam}>Add</Button>
+                    <Button type="button" variant="outline" onClick={() => setIsAddingTeam(false)}>Cancel</Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Select name="roster" required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((team) => (
+                          <SelectItem key={team} value={team}>
+                            {team}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setIsAddingTeam(true)}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add another team
+                    </Button>
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="discord_link">Discord Link (Optional)</Label>
@@ -150,57 +212,50 @@ export default function Tournaments() {
         </Dialog>
       </div>
 
-      <div className="space-y-4">
-        {tournaments?.map((tournament) => (
-          <Card key={tournament.id}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="space-y-1.5">
-                <CardTitle className="text-2xl">{tournament.tournament_name}</CardTitle>
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tournament Name</TableHead>
+              <TableHead>Date & Time</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Team</TableHead>
+              <TableHead>Price Pool</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tournaments?.map((tournament) => (
+              <TableRow key={tournament.id}>
+                <TableCell className="font-medium">{tournament.tournament_name}</TableCell>
+                <TableCell>
                   <span className="flex items-center">
                     <Calendar className="mr-1 h-4 w-4" />
                     {format(new Date(tournament.start_time), 'PPp')}
                   </span>
+                </TableCell>
+                <TableCell>
                   <span className="flex items-center">
                     <MapPin className="mr-1 h-4 w-4" />
                     {tournament.location}
                   </span>
+                </TableCell>
+                <TableCell>{tournament.roster}</TableCell>
+                <TableCell>
                   <span className="flex items-center">
                     <Trophy className="mr-1 h-4 w-4" />
                     {tournament.price_pool ? `$${tournament.price_pool}` : 'No prize pool'}
                   </span>
-                </div>
-              </div>
-              <Badge variant={tournament.status === 'pending' ? 'secondary' : 'default'}>
-                {tournament.status}
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold mb-2">Roster</h4>
-                  <p className="text-sm text-muted-foreground">{tournament.roster}</p>
-                </div>
-                <div className="flex space-x-4">
-                  {tournament.discord_link && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={tournament.discord_link} target="_blank" rel="noopener noreferrer">
-                        Discord
-                      </a>
-                    </Button>
-                  )}
-                  {tournament.tournament_link && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={tournament.tournament_link} target="_blank" rel="noopener noreferrer">
-                        Tournament Page
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={tournament.status === 'pending' ? 'secondary' : 'default'}>
+                    {tournament.status}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </DashboardLayout>
   );
