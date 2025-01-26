@@ -134,7 +134,7 @@ export default function Noc() {
         .insert([{
           player_name: formData.get('player_name') as string,
           email: formData.get('email') as string,
-          type: formData.get('type') as string,
+          type: (formData.get('type') as string).toLowerCase(), // Ensure lowercase
           start_date: formData.get('start_date') as string,
           end_date: formData.get('end_date') as string,
           reason: formData.get('reason') as string,
@@ -171,11 +171,11 @@ export default function Noc() {
         .update({
           player_name: formData.get('player_name') as string,
           email: formData.get('email') as string,
-          type: formData.get('type') as string,
+          type: (formData.get('type') as string).toLowerCase(), // Ensure lowercase
           start_date: formData.get('start_date') as string,
           end_date: formData.get('end_date') as string,
           reason: formData.get('reason') as string,
-          status: formData.get('status') as string,
+          status: (formData.get('status') as string).toLowerCase(), // Ensure lowercase
         })
         .eq('id', selectedRecord.id);
 
