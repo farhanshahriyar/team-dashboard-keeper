@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Edit, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -33,6 +33,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type NocRecord = {
   id: string;
@@ -44,34 +50,6 @@ type NocRecord = {
   reason: string;
   status: string;
   created_at: string;
-};
-
-const getTypeColor = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'noc':
-      return 'bg-red-500';
-    case 'leave':
-      return 'bg-blue-500';
-    case 'absent':
-      return 'bg-red-300';
-    default:
-      return 'bg-gray-500';
-  }
-};
-
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 'bg-yellow-500';
-    case 'rejected':
-      return 'bg-red-500';
-    case 'under review':
-      return 'bg-blue-500';
-    case 'accepted':
-      return 'bg-green-500';
-    default:
-      return 'bg-gray-500';
-  }
 };
 
 export default function Noc() {
@@ -134,12 +112,12 @@ export default function Noc() {
         .insert([{
           player_name: formData.get('player_name') as string,
           email: formData.get('email') as string,
-          type: (formData.get('type') as string).toLowerCase(),
+          type: formData.get('type') as string,
           start_date: formData.get('start_date') as string,
           end_date: formData.get('end_date') as string,
           reason: formData.get('reason') as string,
           user_id: user.id,
-          status: 'pending', // Always start with pending status
+          status: 'pending',
         }]);
 
       if (error) throw error;
@@ -171,11 +149,11 @@ export default function Noc() {
         .update({
           player_name: formData.get('player_name') as string,
           email: formData.get('email') as string,
-          type: (formData.get('type') as string).toLowerCase(),
+          type: formData.get('type') as string,
           start_date: formData.get('start_date') as string,
           end_date: formData.get('end_date') as string,
           reason: formData.get('reason') as string,
-          status: (formData.get('status') as string).toLowerCase(),
+          status: formData.get('status') as string,
         })
         .eq('id', selectedRecord.id);
 
@@ -193,6 +171,19 @@ export default function Noc() {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-500';
+      case 'rejected':
+        return 'bg-red-500';
+      case 'under review':
+        return 'bg-blue-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
@@ -219,29 +210,14 @@ export default function Noc() {
       </div>
       <div>
         <Label htmlFor="type">Type</Label>
-        <Select name="type" defaultValue={initialData?.type || 'noc'}>
+        <Select name="type" defaultValue={initialData?.type || 'leave'}>
           <SelectTrigger>
             <SelectValue placeholder="Select type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="noc">
-              <span className="flex items-center">
-                <Badge variant="secondary" className="bg-red-500 text-white mr-2">NOC</Badge>
-                NOC
-              </span>
-            </SelectItem>
-            <SelectItem value="leave">
-              <span className="flex items-center">
-                <Badge variant="secondary" className="bg-blue-500 text-white mr-2">Leave</Badge>
-                Leave
-              </span>
-            </SelectItem>
-            <SelectItem value="absent">
-              <span className="flex items-center">
-                <Badge variant="secondary" className="bg-red-300 text-white mr-2">Absent</Badge>
-                Absent
-              </span>
-            </SelectItem>
+            <SelectItem value="leave">Leave</SelectItem>
+            <SelectItem value="transfer">Transfer</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -282,30 +258,9 @@ export default function Noc() {
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="pending">
-                <span className="flex items-center">
-                  <Badge variant="secondary" className="bg-yellow-500 text-white mr-2">Pending</Badge>
-                  Pending
-                </span>
-              </SelectItem>
-              <SelectItem value="rejected">
-                <span className="flex items-center">
-                  <Badge variant="secondary" className="bg-red-500 text-white mr-2">Rejected</Badge>
-                  Rejected
-                </span>
-              </SelectItem>
-              <SelectItem value="under review">
-                <span className="flex items-center">
-                  <Badge variant="secondary" className="bg-blue-500 text-white mr-2">Under Review</Badge>
-                  Under Review
-                </span>
-              </SelectItem>
-              <SelectItem value="accepted">
-                <span className="flex items-center">
-                  <Badge variant="secondary" className="bg-green-500 text-white mr-2">Accepted</Badge>
-                  Accepted
-                </span>
-              </SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="under review">Under Review</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -370,16 +325,12 @@ export default function Noc() {
               <TableRow key={record.id}>
                 <TableCell>{record.player_name}</TableCell>
                 <TableCell>{record.email}</TableCell>
-                <TableCell>
-                  <Badge className={cn(getTypeColor(record.type), "text-white")}>
-                    {record.type}
-                  </Badge>
-                </TableCell>
+                <TableCell className="capitalize">{record.type}</TableCell>
                 <TableCell>{format(new Date(record.start_date), 'PP')}</TableCell>
                 <TableCell>{format(new Date(record.end_date), 'PP')}</TableCell>
                 <TableCell>{record.reason}</TableCell>
                 <TableCell>
-                  <Badge className={cn(getStatusColor(record.status), "text-white")}>
+                  <Badge className={cn(getStatusBadgeColor(record.status), "text-white")}>
                     {record.status}
                   </Badge>
                 </TableCell>
