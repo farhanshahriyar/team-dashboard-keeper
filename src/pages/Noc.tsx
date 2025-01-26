@@ -134,12 +134,12 @@ export default function Noc() {
         .insert([{
           player_name: formData.get('player_name') as string,
           email: formData.get('email') as string,
-          type: (formData.get('type') as string).toLowerCase(), // Ensure lowercase
+          type: (formData.get('type') as string).toLowerCase(),
           start_date: formData.get('start_date') as string,
           end_date: formData.get('end_date') as string,
           reason: formData.get('reason') as string,
           user_id: user.id,
-          status: 'pending',
+          status: 'pending', // Always start with pending status
         }]);
 
       if (error) throw error;
@@ -171,11 +171,11 @@ export default function Noc() {
         .update({
           player_name: formData.get('player_name') as string,
           email: formData.get('email') as string,
-          type: (formData.get('type') as string).toLowerCase(), // Ensure lowercase
+          type: (formData.get('type') as string).toLowerCase(),
           start_date: formData.get('start_date') as string,
           end_date: formData.get('end_date') as string,
           reason: formData.get('reason') as string,
-          status: (formData.get('status') as string).toLowerCase(), // Ensure lowercase
+          status: (formData.get('status') as string).toLowerCase(),
         })
         .eq('id', selectedRecord.id);
 
