@@ -9,90 +9,144 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import type { Database } from "@/integrations/supabase/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
-const mockPlayers = [
-  {
-    id: 1,
-    mobile: "+1234567890",
-    ign: "ProGamer123",
-    metrics: {
-      totalLeaves: 5,
-      totalAbsent: 2,
-      lateArrivals: 3,
-      totalNOCs: 3, // Max 4 per year
-      pendingNOCs: 1,
-      approvedNOCs: 2,
-      activeDays: 145, // Minimum required: 120 days
-      lastActive: "2024-02-20",
-      totalGamingHours: 120,
-    },
-    contact: {
-      email: "john.doe@example.com",
-      discordId: "ProGamer#1234",
-      status: "Active",
-    },
-  },
-  {
-    id: 2,
-    mobile: "+9876543210",
-    ign: "NightHawk",
-    metrics: {
-      totalLeaves: 8,
-      totalAbsent: 4,
-      lateArrivals: 5,
-      totalNOCs: 4, // At max limit
-      pendingNOCs: 0,
-      approvedNOCs: 4,
-      activeDays: 90, // Below minimum requirement
-      lastActive: "2024-02-19",
-      totalGamingHours: 80,
-    },
-    contact: {
-      email: "nighthawk@example.com",
-      discordId: "NightHawk#5678",
-      status: "Warning",
-    },
-  },
-];
+type TeamMember = Database['public']['Tables']['team_members']['Row'];
+type NOCRecord = Database['public']['Tables']['noc_records']['Row'];
+
+interface PlayerMetrics {
+  totalLeaves: number;
+  totalAbsent: number;
+  totalNOCs: number;
+  pendingNOCs: number;
+  approvedNOCs: number;
+}
 
 const PlayerManagement = () => {
   const { toast } = useToast();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
-  const getStatusColor = (player: typeof mockPlayers[0]) => {
-    if (player.metrics.totalNOCs >= 4) {
+  // Fetch team members
+  const { data: teamMembers, isLoading: loadingMembers } = useQuery({
+    queryKey: ['team-members'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*');
+      
+      if (error) throw error;
+      return data as TeamMember[];
+    },
+  });
+
+  // Fetch NOC records
+  const { data: nocRecords, isLoading: loadingNOCs } = useQuery({
+    queryKey: ['noc-records'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('noc_records')
+        .select('*');
+      
+      if (error) throw error;
+      return data as NOCRecord[];
+    },
+  });
+
+  // Calculate metrics for each player
+  const calculatePlayerMetrics = (playerId: string): PlayerMetrics => {
+    const playerNOCs = nocRecords?.filter(record => record.user_id === playerId) || [];
+    
+    return {
+      totalLeaves: playerNOCs.filter(noc => noc.type === 'leave').length,
+      totalAbsent: playerNOCs.filter(noc => noc.type === 'absent').length,
+      totalNOCs: playerNOCs.filter(noc => noc.type === 'noc').length,
+      pendingNOCs: playerNOCs.filter(noc => noc.status === 'pending').length,
+      approvedNOCs: playerNOCs.filter(noc => noc.status === 'approved').length,
+    };
+  };
+
+  const getStatusColor = (metrics: PlayerMetrics) => {
+    if (metrics.totalNOCs >= 4) {
       return "bg-red-100 text-red-700";
     }
-    if (player.metrics.activeDays < 120) {
+    if (metrics.totalAbsent >= 3) {
       return "bg-yellow-100 text-yellow-700";
     }
     return "bg-green-100 text-green-700";
   };
 
-  const getStatusText = (player: typeof mockPlayers[0]) => {
-    if (player.metrics.totalNOCs >= 4) {
+  const getStatusText = (metrics: PlayerMetrics) => {
+    if (metrics.totalNOCs >= 4) {
       return "NOC Limit Reached";
     }
-    if (player.metrics.activeDays < 120) {
-      return "Low Activity";
+    if (metrics.totalAbsent >= 3) {
+      return "High Absence";
     }
     return "Active";
   };
 
-  const handleNOCRequest = (player: typeof mockPlayers[0]) => {
-    if (player.metrics.totalNOCs >= 4) {
+  const handleNOCRequest = async (playerId: string) => {
+    const metrics = calculatePlayerMetrics(playerId);
+    if (metrics.totalNOCs >= 4) {
       toast({
         title: "NOC Request Failed",
         description: "Player has reached the maximum limit of 4 NOCs per year",
         variant: "destructive",
       });
     } else {
+      // Redirect to NOC form or open modal
       toast({
-        title: "NOC Request Submitted",
-        description: "The NOC request has been submitted for approval",
+        title: "NOC Request",
+        description: "Please use the NOC page to submit a new request",
       });
     }
   };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPlayerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', selectedPlayerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player has been removed",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete player",
+        variant: "destructive",
+      });
+    }
+
+    setShowDeleteDialog(false);
+    setSelectedPlayerId(null);
+  };
+
+  if (loadingMembers || loadingNOCs) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <DashboardLayout>
@@ -117,54 +171,82 @@ const PlayerManagement = () => {
                 <TableHead>Total Absent</TableHead>
                 <TableHead>Total NOCs</TableHead>
                 <TableHead>Pending NOCs</TableHead>
-                <TableHead>Active Days</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockPlayers.map((player) => (
-                <TableRow key={player.id}>
-                  <TableCell>{player.ign}</TableCell>
-                  <TableCell>{player.mobile}</TableCell>
-                  <TableCell>{player.contact.discordId}</TableCell>
-                  <TableCell>{player.metrics.totalLeaves}</TableCell>
-                  <TableCell>{player.metrics.totalAbsent}</TableCell>
-                  <TableCell>{player.metrics.totalNOCs}</TableCell>
-                  <TableCell>{player.metrics.pendingNOCs}</TableCell>
-                  <TableCell>{player.metrics.activeDays}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                        player
-                      )}`}
-                    >
-                      {getStatusText(player)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleNOCRequest(player)}
+              {teamMembers?.map((player) => {
+                const metrics = calculatePlayerMetrics(player.id);
+                return (
+                  <TableRow key={player.id}>
+                    <TableCell>{player.ign}</TableCell>
+                    <TableCell>{player.phone}</TableCell>
+                    <TableCell>{player.discord_id}</TableCell>
+                    <TableCell>{metrics.totalLeaves}</TableCell>
+                    <TableCell>{metrics.totalAbsent}</TableCell>
+                    <TableCell>{metrics.totalNOCs}</TableCell>
+                    <TableCell>{metrics.pendingNOCs}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                          metrics
+                        )}`}
                       >
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-red-600">
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        {getStatusText(metrics)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleNOCRequest(player.id)}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          style={{ color: "#DC2626" }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          style={{ color: "#DC2626" }}
+                          onClick={() => {
+                            setSelectedPlayerId(player.id);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the player's data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
