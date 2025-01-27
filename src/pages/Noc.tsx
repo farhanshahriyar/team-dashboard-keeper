@@ -38,7 +38,7 @@ type NocRecord = {
   id: string;
   player_name: string;
   email: string;
-  type: string;
+  type: 'noc' | 'leave' | 'absent';  // Updated to match constraint
   start_date: string;
   end_date: string;
   reason: string;
@@ -129,17 +129,22 @@ export default function Noc() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const type = (formData.get('type') as string).toLowerCase();
+      if (!['noc', 'leave', 'absent'].includes(type)) {
+        throw new Error('Invalid type selected');
+      }
+
       const { error } = await supabase
         .from('noc_records')
         .insert([{
           player_name: formData.get('player_name') as string,
           email: formData.get('email') as string,
-          type: (formData.get('type') as string).toLowerCase(),
+          type,
           start_date: formData.get('start_date') as string,
           end_date: formData.get('end_date') as string,
           reason: formData.get('reason') as string,
           user_id: user.id,
-          status: 'pending', // Always start with pending status
+          status: 'pending',
         }]);
 
       if (error) throw error;
@@ -166,12 +171,17 @@ export default function Noc() {
     try {
       if (!selectedRecord) return;
 
+      const type = (formData.get('type') as string).toLowerCase();
+      if (!['noc', 'leave', 'absent'].includes(type)) {
+        throw new Error('Invalid type selected');
+      }
+
       const { error } = await supabase
         .from('noc_records')
         .update({
           player_name: formData.get('player_name') as string,
           email: formData.get('email') as string,
-          type: (formData.get('type') as string).toLowerCase(),
+          type,
           start_date: formData.get('start_date') as string,
           end_date: formData.get('end_date') as string,
           reason: formData.get('reason') as string,
@@ -408,4 +418,4 @@ export default function Noc() {
       </div>
     </DashboardLayout>
   );
-}
+};
