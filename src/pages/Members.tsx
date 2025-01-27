@@ -29,6 +29,7 @@ type NewMember = Omit<Member, 'id' | 'created_at' | 'user_id'>;
 export default function Members() {
   const [members, setMembers] = useState<Member[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -94,6 +95,55 @@ export default function Members() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEdit = (member: Member) => {
+    setEditingMember(member);
+    setDialogOpen(true);
+  };
+
+  const handleUpdate = async (formData: NewMember) => {
+    if (!editingMember) return;
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .update(formData)
+        .eq('id', editingMember.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Team member updated successfully",
+      });
+      
+      setDialogOpen(false);
+      setEditingMember(null);
+      fetchMembers();
+    } catch (error: any) {
+      toast({
+        title: "Error updating member",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmDelete = (member: Member) => {
+    toast({
+      title: "Confirm deletion",
+      description: `Are you sure you want to delete ${member.real_name}?`,
+      action: (
+        <Button
+          variant="destructive"
+          onClick={() => handleDelete(member.id)}
+          className="bg-[#DC2626] hover:bg-[#DC2626]/90"
+        >
+          Delete
+        </Button>
+      ),
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -172,15 +222,21 @@ export default function Members() {
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) setEditingMember(null);
+            }}>
               <DialogTrigger asChild>
-                <Button>Add Team Member</Button>
+                <Button className="bg-[#DC2626] hover:bg-[#DC2626]/90">Add Team Member</Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Add New Team Member</DialogTitle>
+                  <DialogTitle>{editingMember ? 'Edit Team Member' : 'Add New Team Member'}</DialogTitle>
                 </DialogHeader>
-                <AddMemberForm onSubmit={handleAddMember} />
+                <AddMemberForm 
+                  onSubmit={editingMember ? handleUpdate : handleAddMember}
+                  initialData={editingMember || undefined}
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -222,13 +278,19 @@ export default function Members() {
                   <TableCell>{member.discord_id}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEdit(member)}
+                        className="text-[#DC2626] hover:text-[#DC2626]/90 hover:bg-[#DC2626]/10"
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(member.id)}
+                        onClick={() => confirmDelete(member)}
+                        className="text-[#DC2626] hover:text-[#DC2626]/90 hover:bg-[#DC2626]/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
