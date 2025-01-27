@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Database } from "@/integrations/supabase/types";
+import { useEffect } from "react";
 
 type Member = Database['public']['Tables']['team_members']['Row'];
 type NewMember = Omit<Member, 'id' | 'created_at' | 'user_id'>;
@@ -35,7 +36,12 @@ const formSchema = z.object({
   picture: z.string(),
 });
 
-export function AddMemberForm({ onSubmit }: { onSubmit: (data: NewMember) => void }) {
+interface AddMemberFormProps {
+  onSubmit: (data: NewMember) => Promise<void>;
+  initialData?: Member;
+}
+
+export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
   const form = useForm<NewMember>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,9 +57,32 @@ export function AddMemberForm({ onSubmit }: { onSubmit: (data: NewMember) => voi
     },
   });
 
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        email: initialData.email,
+        real_name: initialData.real_name,
+        birthdate: initialData.birthdate,
+        phone: initialData.phone,
+        ign: initialData.ign,
+        game_role: initialData.game_role,
+        discord_id: initialData.discord_id,
+        facebook: initialData.facebook,
+        picture: initialData.picture || "",
+      });
+    }
+  }, [initialData, form]);
+
+  const handleSubmit = async (data: NewMember) => {
+    await onSubmit(data);
+    if (!initialData) {
+      form.reset();
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="email"
@@ -190,7 +219,9 @@ export function AddMemberForm({ onSubmit }: { onSubmit: (data: NewMember) => voi
           )}
         />
 
-        <Button type="submit" className="w-full">Add Member</Button>
+        <Button type="submit" className="w-full">
+          {initialData ? 'Update Member' : 'Add Member'}
+        </Button>
       </form>
     </Form>
   );
