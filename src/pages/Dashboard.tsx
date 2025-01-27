@@ -39,28 +39,28 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          <Card>
+          <Card className="bg-[#DC2626] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Players</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{mockData.totalPlayers}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-[#DC2626] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Active NOCs</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{mockData.activeNOCs}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-[#DC2626] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Pending NOCs</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Calendar className="h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{mockData.pendingNOCs}</div>
@@ -81,7 +81,7 @@ const Dashboard = () => {
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="nocs" fill="#3b82f6" name="NOCs Issued" />
+                    <Bar dataKey="nocs" fill="#DC2626" name="NOCs Issued" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
