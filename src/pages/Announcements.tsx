@@ -93,7 +93,7 @@ export default function Announcements() {
         <h1 className="text-3xl font-bold">KR Announcements</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>New Announcement</Button>
+            <Button className="bg-[#DC2626] hover:bg-[#DC2626]/90">New Announcement</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -124,7 +124,7 @@ export default function Announcements() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full">Create Announcement</Button>
+              <Button type="submit" className="w-full bg-[#DC2626] hover:bg-[#DC2626]/90">Create Announcement</Button>
             </form>
           </DialogContent>
         </Dialog>
