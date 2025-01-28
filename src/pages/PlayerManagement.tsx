@@ -133,33 +133,6 @@ const PlayerManagement = () => {
     return "Active";
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!selectedPlayerId) return;
-
-    try {
-      const { error } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('id', selectedPlayerId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Player has been removed",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete player",
-        variant: "destructive",
-      });
-    }
-
-    setShowDeleteDialog(false);
-    setSelectedPlayerId(null);
-  };
-
   if (loadingMembers || loadingNOCs) {
     return <div>Loading...</div>;
   }
@@ -178,9 +151,9 @@ const PlayerManagement = () => {
                 <TableHead>IGN</TableHead>
                 <TableHead>Mobile</TableHead>
                 <TableHead>Discord ID</TableHead>
-                <TableHead>Leave Days</TableHead>
-                <TableHead>Absent Days</TableHead>
-                <TableHead>NOC Days</TableHead>
+                <TableHead>Leave Days (Count)</TableHead>
+                <TableHead>Absent Days (Count)</TableHead>
+                <TableHead>NOC Days (Count)</TableHead>
                 <TableHead>Total Records</TableHead>
                 <TableHead>This Month</TableHead>
                 <TableHead>Status</TableHead>
@@ -195,9 +168,15 @@ const PlayerManagement = () => {
                     <TableCell>{player.ign}</TableCell>
                     <TableCell>{player.phone}</TableCell>
                     <TableCell>{player.discord_id}</TableCell>
-                    <TableCell>{metrics.leaveDays} ({metrics.totalLeaveCount})</TableCell>
-                    <TableCell>{metrics.absentDays} ({metrics.totalAbsentCount})</TableCell>
-                    <TableCell>{metrics.nocDays} ({metrics.totalNOCCount})</TableCell>
+                    <TableCell>
+                      {metrics.leaveDays} ({metrics.totalLeaveCount})
+                    </TableCell>
+                    <TableCell>
+                      {metrics.absentDays} ({metrics.totalAbsentCount})
+                    </TableCell>
+                    <TableCell>
+                      {metrics.nocDays} ({metrics.totalNOCCount})
+                    </TableCell>
                     <TableCell>
                       {metrics.totalLeaveCount + metrics.totalAbsentCount + metrics.totalNOCCount}
                     </TableCell>
