@@ -57,7 +57,6 @@ const PlayerManagement = () => {
     },
   });
 
-  // Fetch NOC records with real-time updates
   const { data: nocRecords, isLoading: loadingNOCs } = useQuery({
     queryKey: ['noc-records'],
     queryFn: async () => {
