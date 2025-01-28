@@ -34,6 +34,8 @@ interface PlayerMetrics {
   totalNOCs: number;
   pendingNOCs: number;
   approvedNOCs: number;
+  recentLeaveDate?: string;
+  recentAbsentDate?: string;
 }
 
 const PlayerManagement = () => {
@@ -54,29 +56,39 @@ const PlayerManagement = () => {
     },
   });
 
-  // Fetch NOC records
+  // Fetch NOC records with real-time updates
   const { data: nocRecords, isLoading: loadingNOCs } = useQuery({
     queryKey: ['noc-records'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('noc_records')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as NOCRecord[];
     },
   });
 
-  // Calculate metrics for each player
+  // Calculate metrics for each player with recent dates
   const calculatePlayerMetrics = (playerId: string): PlayerMetrics => {
     const playerNOCs = nocRecords?.filter(record => record.user_id === playerId) || [];
     
+    const leaves = playerNOCs.filter(noc => noc.type === 'leave');
+    const absents = playerNOCs.filter(noc => noc.type === 'absent');
+    const nocs = playerNOCs.filter(noc => noc.type === 'noc');
+
+    const recentLeave = leaves[0];
+    const recentAbsent = absents[0];
+    
     return {
-      totalLeaves: playerNOCs.filter(noc => noc.type === 'leave').length,
-      totalAbsent: playerNOCs.filter(noc => noc.type === 'absent').length,
-      totalNOCs: playerNOCs.filter(noc => noc.type === 'noc').length,
+      totalLeaves: leaves.length,
+      totalAbsent: absents.length,
+      totalNOCs: nocs.length,
       pendingNOCs: playerNOCs.filter(noc => noc.status === 'pending').length,
       approvedNOCs: playerNOCs.filter(noc => noc.status === 'approved').length,
+      recentLeaveDate: recentLeave?.start_date,
+      recentAbsentDate: recentAbsent?.start_date,
     };
   };
 
@@ -109,7 +121,6 @@ const PlayerManagement = () => {
         variant: "destructive",
       });
     } else {
-      // Redirect to NOC form or open modal
       toast({
         title: "NOC Request",
         description: "Please use the NOC page to submit a new request",
@@ -168,9 +179,10 @@ const PlayerManagement = () => {
                 <TableHead>Mobile</TableHead>
                 <TableHead>Discord ID</TableHead>
                 <TableHead>Total Leaves</TableHead>
+                <TableHead>Recent Leave</TableHead>
                 <TableHead>Total Absent</TableHead>
+                <TableHead>Recent Absent</TableHead>
                 <TableHead>Total NOCs</TableHead>
-                <TableHead>Pending NOCs</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -184,9 +196,10 @@ const PlayerManagement = () => {
                     <TableCell>{player.phone}</TableCell>
                     <TableCell>{player.discord_id}</TableCell>
                     <TableCell>{metrics.totalLeaves}</TableCell>
+                    <TableCell>{metrics.recentLeaveDate || 'N/A'}</TableCell>
                     <TableCell>{metrics.totalAbsent}</TableCell>
+                    <TableCell>{metrics.recentAbsentDate || 'N/A'}</TableCell>
                     <TableCell>{metrics.totalNOCs}</TableCell>
-                    <TableCell>{metrics.pendingNOCs}</TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
@@ -203,25 +216,23 @@ const PlayerManagement = () => {
                           size="icon"
                           onClick={() => handleNOCRequest(player.id)}
                         >
-                          <FileText className="h-4 w-4" />
+                          <FileText className="h-4 w-4" style={{ color: "#DC2626" }} />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          style={{ color: "#DC2626" }}
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" style={{ color: "#DC2626" }} />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          style={{ color: "#DC2626" }}
                           onClick={() => {
                             setSelectedPlayerId(player.id);
                             setShowDeleteDialog(true);
                           }}
                         >
-                          <Trash className="h-4 w-4" />
+                          <Trash className="h-4 w-4" style={{ color: "#DC2626" }} />
                         </Button>
                       </div>
                     </TableCell>
