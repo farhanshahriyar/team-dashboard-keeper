@@ -23,6 +23,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState } from "react";
 import { differenceInDays, parseISO } from "date-fns";
 
@@ -38,12 +54,24 @@ interface PlayerMetrics {
   totalNOCCount: number;
   currentMonthLeaves: number;
   currentMonthAbsents: number;
+  status: 'Active' | 'Inactive' | 'Suspend' | 'Banned';
+}
+
+interface EditableFields {
+  leaveDays: number;
+  absentDays: number;
+  nocDays: number;
+  totalRecords: number;
+  currentMonth: { leaves: number; absents: number };
+  status: string;
 }
 
 const PlayerManagement = () => {
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [editableFields, setEditableFields] = useState<EditableFields | null>(null);
 
   const { data: teamMembers, isLoading: loadingMembers } = useQuery({
     queryKey: ['team-members'],
@@ -129,6 +157,50 @@ const PlayerManagement = () => {
     return "Active";
   };
 
+  const handleEditClick = (playerId: string, metrics: PlayerMetrics) => {
+    setSelectedPlayerId(playerId);
+    setEditableFields({
+      leaveDays: metrics.leaveDays,
+      absentDays: metrics.absentDays,
+      nocDays: metrics.nocDays,
+      totalRecords: metrics.totalLeaveCount + metrics.totalAbsentCount + metrics.totalNOCCount,
+      currentMonth: {
+        leaves: metrics.currentMonthLeaves,
+        absents: metrics.currentMonthAbsents,
+      },
+      status: getStatusText(metrics),
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!selectedPlayerId || !editableFields) return;
+
+    try {
+      // Update the relevant records in the database
+      const { error } = await supabase
+        .from('team_members')
+        .update({
+          // Add the fields you want to update
+        })
+        .eq('id', selectedPlayerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player data has been updated",
+      });
+      setShowEditDialog(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update player data",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!selectedPlayerId) return;
 
@@ -144,6 +216,8 @@ const PlayerManagement = () => {
         title: "Success",
         description: "Player has been removed",
       });
+      setShowDeleteDialog(false);
+      setSelectedPlayerId(null);
     } catch (error) {
       toast({
         title: "Error",
@@ -151,44 +225,41 @@ const PlayerManagement = () => {
         variant: "destructive",
       });
     }
-
-    setShowDeleteDialog(false);
-    setSelectedPlayerId(null);
   };
 
   if (loadingMembers || loadingNOCs) {
-    return <div>Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen font-inter">Loading...</div>;
   }
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="space-y-8 font-inter">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Player Management</h1>
         </div>
 
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>IGN</TableHead>
-                <TableHead>Mobile</TableHead>
-                <TableHead>Discord ID</TableHead>
-                <TableHead>Leave Days (Count)</TableHead>
-                <TableHead>Absent Days (Count)</TableHead>
-                <TableHead>NOC Days (Count)</TableHead>
-                <TableHead>Total Records</TableHead>
-                <TableHead>This Month</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="whitespace-nowrap">IGN</TableHead>
+                <TableHead className="whitespace-nowrap">Mobile</TableHead>
+                <TableHead className="whitespace-nowrap">Discord ID</TableHead>
+                <TableHead className="whitespace-nowrap">Leave Days (Count)</TableHead>
+                <TableHead className="whitespace-nowrap">Absent Days (Count)</TableHead>
+                <TableHead className="whitespace-nowrap">NOC Days (Count)</TableHead>
+                <TableHead className="whitespace-nowrap">Total Records</TableHead>
+                <TableHead className="whitespace-nowrap">This Month</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {teamMembers?.map((player) => {
                 const metrics = calculatePlayerMetrics(player.id);
                 return (
-                  <TableRow key={player.id}>
-                    <TableCell>{player.ign}</TableCell>
+                  <TableRow key={player.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium">{player.ign}</TableCell>
                     <TableCell>{player.phone}</TableCell>
                     <TableCell>{player.discord_id}</TableCell>
                     <TableCell>
@@ -220,8 +291,9 @@ const PlayerManagement = () => {
                         <Button 
                           variant="ghost" 
                           size="icon"
+                          onClick={() => handleEditClick(player.id, metrics)}
                         >
-                          <Pencil className="h-4 w-4" style={{ color: "#DC2626" }} />
+                          <Pencil className="h-4 w-4 text-blue-600" />
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -231,7 +303,7 @@ const PlayerManagement = () => {
                             setShowDeleteDialog(true);
                           }}
                         >
-                          <Trash className="h-4 w-4" style={{ color: "#DC2626" }} />
+                          <Trash className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>
                     </TableCell>
@@ -242,6 +314,61 @@ const PlayerManagement = () => {
           </Table>
         </div>
       </div>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Player Data</DialogTitle>
+          </DialogHeader>
+          {editableFields && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="leaveDays" className="text-right">
+                  Leave Days
+                </Label>
+                <Input
+                  id="leaveDays"
+                  type="number"
+                  value={editableFields.leaveDays}
+                  onChange={(e) =>
+                    setEditableFields({
+                      ...editableFields,
+                      leaveDays: parseInt(e.target.value),
+                    })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="status" className="text-right">
+                  Status
+                </Label>
+                <Select
+                  value={editableFields.status}
+                  onValueChange={(value) =>
+                    setEditableFields({ ...editableFields, status: value })
+                  }
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="Suspend">Suspend</SelectItem>
+                    <SelectItem value="Banned">Banned</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="submit" onClick={handleEditSave}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
