@@ -122,15 +122,27 @@ const PlayerManagement = () => {
              recordDate.getFullYear() === currentYear;
     });
 
+    const leaveDays = calculateDaysForType(playerNOCs, 'leave');
+    const absentDays = calculateDaysForType(playerNOCs, 'absent');
+    const currentMonthAbsents = currentMonthRecords.filter(record => record.type === 'absent').length;
+
+    let status: PlayerMetrics['status'] = 'Active';
+    if (absentDays > 7 || currentMonthAbsents >= 2) {
+      status = 'Suspend';
+    } else if (leaveDays > 30) {
+      status = 'Inactive';
+    }
+
     return {
-      leaveDays: calculateDaysForType(playerNOCs, 'leave'),
-      absentDays: calculateDaysForType(playerNOCs, 'absent'),
+      leaveDays,
+      absentDays,
       nocDays: calculateDaysForType(playerNOCs, 'noc'),
       totalLeaveCount: playerNOCs.filter(noc => noc.type === 'leave').length,
       totalAbsentCount: playerNOCs.filter(noc => noc.type === 'absent').length,
       totalNOCCount: playerNOCs.filter(noc => noc.type === 'noc').length,
       currentMonthLeaves: currentMonthRecords.filter(record => record.type === 'leave').length,
-      currentMonthAbsents: currentMonthRecords.filter(record => record.type === 'absent').length,
+      currentMonthAbsents,
+      status
     };
   };
 
