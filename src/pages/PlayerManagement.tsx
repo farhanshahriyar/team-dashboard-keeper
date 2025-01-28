@@ -30,19 +30,14 @@ type TeamMember = Database['public']['Tables']['team_members']['Row'];
 type NOCRecord = Database['public']['Tables']['noc_records']['Row'];
 
 interface PlayerMetrics {
-  totalLeaves: number;
-  totalAbsent: number;
-  totalNOCs: number;
-  pendingNOCs: number;
-  approvedNOCs: number;
-  recentLeaveDate?: string;
-  recentAbsentDate?: string;
-  totalLeaveDays: number;
-  totalAbsentDays: number;
-  totalNOCDays: number;
+  leaveDays: number;
+  absentDays: number;
+  nocDays: number;
+  totalLeaveCount: number;
+  totalAbsentCount: number;
+  totalNOCCount: number;
   currentMonthLeaves: number;
   currentMonthAbsents: number;
-  longestLeave: number;
 }
 
 const PlayerManagement = () => {
@@ -77,25 +72,19 @@ const PlayerManagement = () => {
     },
   });
 
-  // Calculate metrics for each player with detailed statistics
+  // Calculate metrics for each player with detailed day calculations
   const calculatePlayerMetrics = (playerId: string): PlayerMetrics => {
     const playerNOCs = nocRecords?.filter(record => record.user_id === playerId) || [];
     
-    const leaves = playerNOCs.filter(noc => noc.type === 'leave');
-    const absents = playerNOCs.filter(noc => noc.type === 'absent');
-    const nocs = playerNOCs.filter(noc => noc.type === 'noc');
-
-    const recentLeave = leaves[0];
-    const recentAbsent = absents[0];
-
-    // Calculate total days for each type
-    const calculateTotalDays = (records: NOCRecord[]) => {
-      return records.reduce((total, record) => {
-        const startDate = parseISO(record.start_date);
-        const endDate = parseISO(record.end_date);
-        const days = differenceInDays(endDate, startDate) + 1; // +1 to include both start and end dates
-        return total + days;
-      }, 0);
+    const calculateDaysForType = (records: NOCRecord[], type: string) => {
+      return records
+        .filter(record => record.type === type)
+        .reduce((total, record) => {
+          const startDate = parseISO(record.start_date);
+          const endDate = parseISO(record.end_date);
+          const days = differenceInDays(endDate, startDate) + 1; // Including both start and end dates
+          return total + days;
+        }, 0);
     };
 
     // Calculate current month records
@@ -103,79 +92,45 @@ const PlayerManagement = () => {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
 
-    const currentMonthLeaves = leaves.filter(leave => {
-      const leaveDate = parseISO(leave.start_date);
-      return leaveDate.getMonth() === currentMonth && leaveDate.getFullYear() === currentYear;
+    const currentMonthRecords = playerNOCs.filter(record => {
+      const recordDate = parseISO(record.start_date);
+      return recordDate.getMonth() === currentMonth && 
+             recordDate.getFullYear() === currentYear;
     });
 
-    const currentMonthAbsents = absents.filter(absent => {
-      const absentDate = parseISO(absent.start_date);
-      return absentDate.getMonth() === currentMonth && absentDate.getFullYear() === currentYear;
-    });
-
-    // Calculate longest leave duration
-    const longestLeave = leaves.reduce((max, leave) => {
-      const duration = differenceInDays(parseISO(leave.end_date), parseISO(leave.start_date)) + 1;
-      return Math.max(max, duration);
-    }, 0);
-    
     return {
-      totalLeaves: leaves.length,
-      totalAbsent: absents.length,
-      totalNOCs: nocs.length,
-      pendingNOCs: playerNOCs.filter(noc => noc.status === 'pending').length,
-      approvedNOCs: playerNOCs.filter(noc => noc.status === 'approved').length,
-      recentLeaveDate: recentLeave?.start_date,
-      recentAbsentDate: recentAbsent?.start_date,
-      totalLeaveDays: calculateTotalDays(leaves),
-      totalAbsentDays: calculateTotalDays(absents),
-      totalNOCDays: calculateTotalDays(nocs),
-      currentMonthLeaves: currentMonthLeaves.length,
-      currentMonthAbsents: currentMonthAbsents.length,
-      longestLeave,
+      leaveDays: calculateDaysForType(playerNOCs, 'leave'),
+      absentDays: calculateDaysForType(playerNOCs, 'absent'),
+      nocDays: calculateDaysForType(playerNOCs, 'noc'),
+      totalLeaveCount: playerNOCs.filter(noc => noc.type === 'leave').length,
+      totalAbsentCount: playerNOCs.filter(noc => noc.type === 'absent').length,
+      totalNOCCount: playerNOCs.filter(noc => noc.type === 'noc').length,
+      currentMonthLeaves: currentMonthRecords.filter(record => record.type === 'leave').length,
+      currentMonthAbsents: currentMonthRecords.filter(record => record.type === 'absent').length,
     };
   };
 
   const getStatusColor = (metrics: PlayerMetrics) => {
-    if (metrics.totalNOCs >= 4 || metrics.totalLeaveDays > 30) {
+    if (metrics.absentDays > 7 || metrics.currentMonthAbsents >= 2) {
       return "bg-red-100 text-red-700";
     }
-    if (metrics.totalAbsent >= 3 || metrics.currentMonthAbsents >= 2) {
+    if (metrics.leaveDays > 30) {
       return "bg-yellow-100 text-yellow-700";
     }
     return "bg-green-100 text-green-700";
   };
 
   const getStatusText = (metrics: PlayerMetrics) => {
-    if (metrics.totalNOCs >= 4) {
-      return "NOC Limit Reached";
-    }
-    if (metrics.totalLeaveDays > 30) {
-      return "Excessive Leave";
-    }
-    if (metrics.totalAbsent >= 3) {
+    if (metrics.absentDays > 7) {
       return "High Absence";
     }
+    if (metrics.leaveDays > 30) {
+      return "Extended Leave";
+    }
     if (metrics.currentMonthAbsents >= 2) {
-      return "Recent Absences";
+      return "Multiple Absences";
     }
     return "Active";
-  };
-
-  const handleNOCRequest = async (playerId: string) => {
-    const metrics = calculatePlayerMetrics(playerId);
-    if (metrics.totalNOCs >= 4) {
-      toast({
-        title: "NOC Request Failed",
-        description: "Player has reached the maximum limit of 4 NOCs per year",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "NOC Request",
-        description: "Please use the NOC page to submit a new request",
-      });
-    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -214,11 +169,6 @@ const PlayerManagement = () => {
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Player Management</h1>
-          <div className="flex gap-4">
-            <Button variant="outline">
-              <FileText className="mr-2 h-4 w-4" /> View Reports
-            </Button>
-          </div>
         </div>
 
         <div className="rounded-md border">
@@ -228,12 +178,11 @@ const PlayerManagement = () => {
                 <TableHead>IGN</TableHead>
                 <TableHead>Mobile</TableHead>
                 <TableHead>Discord ID</TableHead>
-                <TableHead>Total Leaves (Days)</TableHead>
-                <TableHead>Recent Leave</TableHead>
-                <TableHead>Total Absent (Days)</TableHead>
+                <TableHead>Leave Days</TableHead>
+                <TableHead>Absent Days</TableHead>
+                <TableHead>NOC Days</TableHead>
+                <TableHead>Total Records</TableHead>
                 <TableHead>This Month</TableHead>
-                <TableHead>NOCs (Days)</TableHead>
-                <TableHead>Longest Leave</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -246,14 +195,15 @@ const PlayerManagement = () => {
                     <TableCell>{player.ign}</TableCell>
                     <TableCell>{player.phone}</TableCell>
                     <TableCell>{player.discord_id}</TableCell>
-                    <TableCell>{metrics.totalLeaves} ({metrics.totalLeaveDays})</TableCell>
-                    <TableCell>{metrics.recentLeaveDate || 'N/A'}</TableCell>
-                    <TableCell>{metrics.totalAbsent} ({metrics.totalAbsentDays})</TableCell>
+                    <TableCell>{metrics.leaveDays} ({metrics.totalLeaveCount})</TableCell>
+                    <TableCell>{metrics.absentDays} ({metrics.totalAbsentCount})</TableCell>
+                    <TableCell>{metrics.nocDays} ({metrics.totalNOCCount})</TableCell>
+                    <TableCell>
+                      {metrics.totalLeaveCount + metrics.totalAbsentCount + metrics.totalNOCCount}
+                    </TableCell>
                     <TableCell>
                       L: {metrics.currentMonthLeaves} A: {metrics.currentMonthAbsents}
                     </TableCell>
-                    <TableCell>{metrics.totalNOCs} ({metrics.totalNOCDays})</TableCell>
-                    <TableCell>{metrics.longestLeave} days</TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
@@ -265,13 +215,6 @@ const PlayerManagement = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleNOCRequest(player.id)}
-                        >
-                          <FileText className="h-4 w-4" style={{ color: "#DC2626" }} />
-                        </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
