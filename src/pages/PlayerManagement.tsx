@@ -45,7 +45,6 @@ const PlayerManagement = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
-  // Fetch team members
   const { data: teamMembers, isLoading: loadingMembers } = useQuery({
     queryKey: ['team-members'],
     queryFn: async () => {
@@ -72,7 +71,6 @@ const PlayerManagement = () => {
     },
   });
 
-  // Calculate metrics for each player with detailed day calculations
   const calculatePlayerMetrics = (playerId: string): PlayerMetrics => {
     const playerNOCs = nocRecords?.filter(record => record.user_id === playerId) || [];
     
@@ -82,12 +80,11 @@ const PlayerManagement = () => {
         .reduce((total, record) => {
           const startDate = parseISO(record.start_date);
           const endDate = parseISO(record.end_date);
-          const days = differenceInDays(endDate, startDate) + 1; // Including both start and end dates
+          const days = differenceInDays(endDate, startDate) + 1;
           return total + days;
         }, 0);
     };
 
-    // Calculate current month records
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
@@ -131,6 +128,33 @@ const PlayerManagement = () => {
       return "Multiple Absences";
     }
     return "Active";
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPlayerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', selectedPlayerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player has been removed",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete player",
+        variant: "destructive",
+      });
+    }
+
+    setShowDeleteDialog(false);
+    setSelectedPlayerId(null);
   };
 
   if (loadingMembers || loadingNOCs) {
