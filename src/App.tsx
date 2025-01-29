@@ -5,36 +5,36 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
-import Announcements from "@/pages/Announcements";
-import Noc from "@/pages/Noc";
-import NocApplications from "@/pages/NocApplications";
 import Members from "@/pages/Members";
-import PlayerManagement from "@/pages/PlayerManagement";
 import Tournaments from "@/pages/Tournaments";
+import Announcements from "@/pages/Announcements";
 import Account from "@/pages/Account";
+import Noc from "@/pages/Noc";
+import PlayerManagement from "@/pages/PlayerManagement";
+import Index from "@/pages/Index";
 
 const queryClient = new QueryClient();
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="dark" attribute="class">
       <QueryClientProvider client={queryClient}>
-        <Toaster />
         <Router>
           <Routes>
+            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/announcements" element={<Announcements />} />
-              <Route path="/noc" element={<Noc />} />
-              <Route path="/allnoc-applications" element={<NocApplications />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/members" element={<Members />} />
-              <Route path="/player-management" element={<PlayerManagement />} />
               <Route path="/tournaments" element={<Tournaments />} />
+              <Route path="/announcements" element={<Announcements />} />
               <Route path="/account" element={<Account />} />
+              <Route path="/noc" element={<Noc />} />
+              <Route path="/player-management" element={<PlayerManagement />} />
             </Route>
           </Routes>
         </Router>
+        <Toaster />
       </QueryClientProvider>
     </ThemeProvider>
   );
