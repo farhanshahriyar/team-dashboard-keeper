@@ -1,4 +1,4 @@
-import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy, FileSpreadsheet } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -40,11 +40,6 @@ const menuItems = [
     title: "NOC Management",
     path: "/noc",
     icon: Calendar,
-  },
-  {
-    title: "NOC's Applications",
-    path: "/allnoc-applications",
-    icon: FileSpreadsheet,
   },
   {
     title: "Team Members",

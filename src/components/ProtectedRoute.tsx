@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export function ProtectedRoute() {
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const location = useLocation();
@@ -60,5 +60,5 @@ export function ProtectedRoute() {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  return <Outlet />;
+  return <>{children}</>;
 }
