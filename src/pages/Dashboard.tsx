@@ -10,27 +10,89 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-
-const mockNocData = [
-  { month: "Jan", nocs: 2 },
-  { month: "Feb", nocs: 4 },
-  { month: "Mar", nocs: 3 },
-  { month: "Apr", nocs: 5 },
-  { month: "May", nocs: 2 },
-  { month: "Jun", nocs: 3 },
-];
-
-const mockData = {
-  totalPlayers: 25,
-  activeNOCs: 5,
-  pendingNOCs: 3,
-  recentNOCs: [
-    { id: 1, player: "John Doe", status: "Approved", date: "2024-02-20" },
-    { id: 2, player: "Jane Smith", status: "Pending", date: "2024-02-19" },
-  ],
-};
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useMemo } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 const Dashboard = () => {
+  const { toast } = useToast();
+
+  // Fetch NOC records
+  const { data: nocRecords, refetch } = useQuery({
+    queryKey: ['noc_records'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('noc_records')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('dashboard-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'noc_records'
+        },
+        () => {
+          refetch();
+          toast({
+            title: "Data Updated",
+            description: "Dashboard data has been refreshed.",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch, toast]);
+
+  // Process data for the chart
+  const chartData = useMemo(() => {
+    if (!nocRecords) return [];
+
+    const monthlyData = nocRecords.reduce((acc: any, record: any) => {
+      const month = format(new Date(record.created_at), 'MMM');
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(monthlyData).map(([month, count]) => ({
+      month,
+      nocs: count,
+    }));
+  }, [nocRecords]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    if (!nocRecords) return {
+      totalPlayers: 0,
+      activeNOCs: 0,
+      pendingNOCs: 0,
+    };
+
+    return {
+      totalPlayers: new Set(nocRecords.map(record => record.player_name)).size,
+      activeNOCs: nocRecords.filter(record => 
+        record.status === 'accepted' && 
+        new Date(record.end_date) >= new Date()
+      ).length,
+      pendingNOCs: nocRecords.filter(record => record.status === 'pending').length,
+    };
+  }, [nocRecords]);
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -45,7 +107,7 @@ const Dashboard = () => {
               <Users className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.totalPlayers}</div>
+              <div className="text-2xl font-bold">{stats.totalPlayers}</div>
             </CardContent>
           </Card>
           <Card className="bg-[#DC2626] text-white">
@@ -54,7 +116,7 @@ const Dashboard = () => {
               <FileText className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.activeNOCs}</div>
+              <div className="text-2xl font-bold">{stats.activeNOCs}</div>
             </CardContent>
           </Card>
           <Card className="bg-[#DC2626] text-white">
@@ -63,7 +125,7 @@ const Dashboard = () => {
               <Calendar className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.pendingNOCs}</div>
+              <div className="text-2xl font-bold">{stats.pendingNOCs}</div>
             </CardContent>
           </Card>
         </div>
@@ -76,7 +138,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={mockNocData}>
+                  <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -94,19 +156,19 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockData.recentNOCs.map((noc) => (
+                {nocRecords?.slice(0, 5).map((noc: any) => (
                   <div
                     key={noc.id}
                     className="flex items-center justify-between"
                   >
                     <div>
-                      <p className="font-medium">{noc.player}</p>
+                      <p className="font-medium">{noc.player_name}</p>
                       <p className="text-sm text-muted-foreground">
                         Status: {noc.status}
                       </p>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {noc.date}
+                      {format(new Date(noc.created_at), 'yyyy-MM-dd')}
                     </span>
                   </div>
                 ))}
