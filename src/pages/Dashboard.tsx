@@ -19,12 +19,12 @@ import { format } from "date-fns";
 const Dashboard = () => {
   const { toast } = useToast();
 
-  // Fetch NOC records
-  const { data: nocRecords, refetch } = useQuery({
-    queryKey: ['noc_records'],
+  // Fetch team members data
+  const { data: teamMembers, refetch } = useQuery({
+    queryKey: ['team_members'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('noc_records')
+        .from('team_members')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -42,7 +42,7 @@ const Dashboard = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'noc_records'
+          table: 'team_members'
         },
         () => {
           refetch();
@@ -61,71 +61,68 @@ const Dashboard = () => {
 
   // Process data for the chart
   const chartData = useMemo(() => {
-    if (!nocRecords) return [];
+    if (!teamMembers) return [];
 
-    const monthlyData = nocRecords.reduce((acc: any, record: any) => {
-      const month = format(new Date(record.created_at), 'MMM');
+    const monthlyData = teamMembers.reduce((acc: any, member: any) => {
+      const month = format(new Date(member.created_at), 'MMM');
       acc[month] = (acc[month] || 0) + 1;
       return acc;
     }, {});
 
     return Object.entries(monthlyData).map(([month, count]) => ({
       month,
-      nocs: count,
+      members: count,
     }));
-  }, [nocRecords]);
+  }, [teamMembers]);
 
   // Calculate statistics
   const stats = useMemo(() => {
-    if (!nocRecords) return {
-      totalPlayers: 0,
-      activeNOCs: 0,
-      pendingNOCs: 0,
+    if (!teamMembers) return {
+      totalMembers: 0,
+      activeRoles: 0,
+      pendingMembers: 0,
     };
 
     return {
-      totalPlayers: new Set(nocRecords.map(record => record.player_name)).size,
-      activeNOCs: nocRecords.filter(record => 
-        record.status === 'accepted' && 
-        new Date(record.end_date) >= new Date()
-      ).length,
-      pendingNOCs: nocRecords.filter(record => record.status === 'pending').length,
+      totalMembers: teamMembers.length,
+      activeRoles: new Set(teamMembers.map(member => member.game_role)).size,
+      pendingMembers: teamMembers.filter(member => !member.picture).length, // Using missing picture as pending indicator
     };
-  }, [nocRecords]);
+  }, [teamMembers]);
 
   return (
     <DashboardLayout>
       <div className="space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">Team Dashboard</h1>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
           <Card className="bg-[#DC2626] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Players</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Members</CardTitle>
               <Users className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalPlayers}</div>
+              <div className="text-2xl font-bold">{stats.totalMembers}</div>
             </CardContent>
           </Card>
           <Card className="bg-[#DC2626] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active NOCs</CardTitle>
+              <CardTitle className="text-sm font-medium">Active Roles</CardTitle>
               <FileText className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.activeNOCs}</div>
+              <div className="text-2xl font-bold">{stats.activeRoles}</div>
             </CardContent>
           </Card>
           <Card className="bg-[#DC2626] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pending NOCs</CardTitle>
+              <CardTitle className="text-sm font-medium">Pending Members</CardTitle>
               <Calendar className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingNOCs}</div>
+              <div className="text-2xl font-bold">{stats.pendingMembers}</div>
             </CardContent>
           </Card>
         </div>
@@ -133,7 +130,7 @@ const Dashboard = () => {
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>NOCs Per Month</CardTitle>
+              <CardTitle>Members Per Month</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
@@ -143,7 +140,7 @@ const Dashboard = () => {
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="nocs" fill="#DC2626" name="NOCs Issued" />
+                    <Bar dataKey="members" fill="#DC2626" name="Team Members" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -152,23 +149,23 @@ const Dashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent NOC Activity</CardTitle>
+              <CardTitle>Recent Team Activity</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {nocRecords?.slice(0, 5).map((noc: any) => (
+                {teamMembers?.slice(0, 5).map((member: any) => (
                   <div
-                    key={noc.id}
+                    key={member.id}
                     className="flex items-center justify-between"
                   >
                     <div>
-                      <p className="font-medium">{noc.player_name}</p>
+                      <p className="font-medium">{member.real_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        Status: {noc.status}
+                        Role: {member.game_role}
                       </p>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {format(new Date(noc.created_at), 'yyyy-MM-dd')}
+                      {format(new Date(member.created_at), 'yyyy-MM-dd')}
                     </span>
                   </div>
                 ))}
