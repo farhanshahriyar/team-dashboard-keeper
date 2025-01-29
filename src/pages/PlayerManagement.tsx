@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
 import {
   AlertDialog,
@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { differenceInDays, parseISO } from "date-fns";
 
 type TeamMember = Database['public']['Tables']['team_members']['Row'];
@@ -68,6 +68,7 @@ interface EditableFields {
 
 const PlayerManagement = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
@@ -97,6 +98,57 @@ const PlayerManagement = () => {
       return data as NOCRecord[];
     },
   });
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    // Subscribe to team_members changes
+    const teamMembersChannel = supabase
+      .channel('team_members_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_members'
+        },
+        () => {
+          // Invalidate and refetch team members data
+          queryClient.invalidateQueries({ queryKey: ['team-members'] });
+          toast({
+            title: "Data Updated",
+            description: "Team member information has been updated.",
+          });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to noc_records changes
+    const nocRecordsChannel = supabase
+      .channel('noc_records_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'noc_records'
+        },
+        () => {
+          // Invalidate and refetch NOC records data
+          queryClient.invalidateQueries({ queryKey: ['noc-records'] });
+          toast({
+            title: "Data Updated",
+            description: "NOC records have been updated.",
+          });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions
+    return () => {
+      supabase.removeChannel(teamMembersChannel);
+      supabase.removeChannel(nocRecordsChannel);
+    };
+  }, [queryClient, toast]);
 
   const calculatePlayerMetrics = (playerId: string): PlayerMetrics => {
     const playerNOCs = nocRecords?.filter(record => record.user_id === playerId) || [];
