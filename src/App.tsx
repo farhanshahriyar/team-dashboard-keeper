@@ -1,92 +1,43 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider } from "@/components/theme-provider";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Members from "./pages/Members";
-import Noc from "./pages/Noc";
-import Dashboard from "./pages/Dashboard";
-import PlayerManagement from "./pages/PlayerManagement";
-import Account from "./pages/Account";
-import Auth from "./pages/Auth";
-import Announcements from "./pages/Announcements";
-import Tournaments from "./pages/Tournaments";
+import { Toaster } from "@/components/ui/toast";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import Auth from "@/pages/Auth";
+import Dashboard from "@/pages/Dashboard";
+import Announcements from "@/pages/Announcements";
+import Noc from "@/pages/Noc";
+import NocApplications from "@/pages/NocApplications";
+import Members from "@/pages/Members";
+import PlayerManagement from "@/pages/PlayerManagement";
+import Tournaments from "@/pages/Tournaments";
+import Account from "@/pages/Account";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <ThemeProvider defaultTheme="dark" storageKey="app-theme">
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <BrowserRouter>
+function App() {
+  return (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <QueryClientProvider client={queryClient}>
+        <Toaster />
+        <Router>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/members"
-              element={
-                <ProtectedRoute>
-                  <Members />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/noc"
-              element={
-                <ProtectedRoute>
-                  <Noc />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/player-management"
-              element={
-                <ProtectedRoute>
-                  <PlayerManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/account"
-              element={
-                <ProtectedRoute>
-                  <Account />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/announcements"
-              element={
-                <ProtectedRoute>
-                  <Announcements />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tournaments"
-              element={
-                <ProtectedRoute>
-                  <Tournaments />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/announcements" element={<Announcements />} />
+              <Route path="/noc" element={<Noc />} />
+              <Route path="/allnoc-applications" element={<NocApplications />} />
+              <Route path="/members" element={<Members />} />
+              <Route path="/player-management" element={<PlayerManagement />} />
+              <Route path="/tournaments" element={<Tournaments />} />
+              <Route path="/account" element={<Account />} />
+            </Route>
           </Routes>
-        </BrowserRouter>
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+        </Router>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
 
 export default App;
