@@ -19,7 +19,20 @@ import { format } from "date-fns";
 const Dashboard = () => {
   const { toast } = useToast();
 
-  // Fetch NOC records
+  // Fetch team members for total players count
+  const { data: teamMembers, refetch: refetchTeamMembers } = useQuery({
+    queryKey: ['team_members'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*');
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch NOC records for other stats
   const { data: nocRecords, refetch } = useQuery({
     queryKey: ['noc_records'],
     queryFn: async () => {
@@ -52,12 +65,27 @@ const Dashboard = () => {
           });
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_members'
+        },
+        () => {
+          refetchTeamMembers();
+          toast({
+            title: "Team Members Updated",
+            description: "Team members data has been refreshed.",
+          });
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch, toast]);
+  }, [refetch, refetchTeamMembers, toast]);
 
   // Process data for the chart
   const chartData = useMemo(() => {
@@ -77,21 +105,21 @@ const Dashboard = () => {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    if (!nocRecords) return {
+    if (!nocRecords || !teamMembers) return {
       totalPlayers: 0,
       activeNOCs: 0,
       pendingNOCs: 0,
     };
 
     return {
-      totalPlayers: new Set(nocRecords.map(record => record.player_name)).size,
+      totalPlayers: teamMembers.length,
       activeNOCs: nocRecords.filter(record => 
         record.status === 'accepted' && 
         new Date(record.end_date) >= new Date()
       ).length,
       pendingNOCs: nocRecords.filter(record => record.status === 'pending').length,
     };
-  }, [nocRecords]);
+  }, [nocRecords, teamMembers]);
 
   return (
     <DashboardLayout>
