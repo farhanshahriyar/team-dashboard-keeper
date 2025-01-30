@@ -13,6 +13,7 @@ import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import Announcements from "./pages/Announcements";
 import Tournaments from "./pages/Tournaments";
+import MatchHistory from "./pages/MatchHistory";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Tournaments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/match-history"
+              element={
+                <ProtectedRoute>
+                  <MatchHistory />
                 </ProtectedRoute>
               }
             />

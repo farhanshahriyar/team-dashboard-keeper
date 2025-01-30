@@ -1,4 +1,4 @@
-import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy, History } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -55,6 +55,11 @@ const menuItems = [
     title: "Tournaments",
     path: "/tournaments",
     icon: Trophy,
+  },
+  {
+    title: "Match History",
+    path: "/match-history",
+    icon: History,
   },
 ];
 
