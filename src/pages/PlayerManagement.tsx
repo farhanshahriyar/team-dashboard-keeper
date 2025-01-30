@@ -38,13 +38,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { differenceInDays, parseISO, format } from "date-fns";
+import { differenceInDays, parseISO } from "date-fns";
 
 type TeamMember = Database['public']['Tables']['team_members']['Row'];
 type NOCRecord = Database['public']['Tables']['noc_records']['Row'];
 
 interface PlayerMetrics {
-  email: string;
   leaveDays: number;
   absentDays: number;
   nocDays: number;
@@ -64,7 +63,7 @@ const PlayerManagement = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
 
-  // Fetch team members with their NOC records
+  // Fetch team members
   const { data: teamMembers, isLoading: loadingMembers } = useQuery({
     queryKey: ['team-members'],
     queryFn: async () => {
@@ -137,9 +136,8 @@ const PlayerManagement = () => {
     };
   }, [queryClient, toast]);
 
-  const calculatePlayerMetrics = (email: string): PlayerMetrics => {
-    const member = teamMembers?.find(m => m.email === email);
-    const playerNOCs = nocRecords?.filter(record => record.email === email) || [];
+  const calculatePlayerMetrics = (playerId: string): PlayerMetrics => {
+    const playerNOCs = nocRecords?.filter(record => record.user_id === playerId) || [];
     
     const calculateDaysForType = (records: NOCRecord[], type: string) => {
       return records
@@ -168,8 +166,10 @@ const PlayerManagement = () => {
     const currentMonthLeaves = currentMonthRecords.filter(record => record.type === 'leave').length;
     const currentMonthAbsents = currentMonthRecords.filter(record => record.type === 'absent').length;
 
+    const member = teamMembers?.find(m => m.id === playerId);
+    const status = member?.status || 'Active';
+
     return {
-      email,
       leaveDays,
       absentDays,
       nocDays,
@@ -178,16 +178,83 @@ const PlayerManagement = () => {
       totalNOCCount: playerNOCs.filter(noc => noc.type === 'noc').length,
       currentMonthLeaves,
       currentMonthAbsents,
-      status: member?.status || 'Active'
+      status
     };
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return "bg-green-100 text-green-700";
+      case 'inactive':
+        return "bg-yellow-100 text-yellow-700";
+      case 'suspended':
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  const handleEditClick = (playerId: string, currentStatus: string) => {
+    setSelectedPlayerId(playerId);
+    setSelectedStatus(currentStatus);
+    setShowEditDialog(true);
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!selectedPlayerId || !selectedStatus) return;
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .update({ status: selectedStatus })
+        .eq('id', selectedPlayerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player status has been updated",
+      });
+      setShowEditDialog(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update player status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPlayerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', selectedPlayerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player has been removed",
+      });
+      setShowDeleteDialog(false);
+      setSelectedPlayerId(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete player",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loadingMembers || loadingNOCs) {
     return <div className="flex items-center justify-center min-h-screen font-inter">Loading...</div>;
   }
-
-  // Get unique emails from team members
-  const uniqueEmails = Array.from(new Set(teamMembers?.map(member => member.email) || []));
 
   return (
     <DashboardLayout>
@@ -200,39 +267,113 @@ const PlayerManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">Email</TableHead>
+                <TableHead className="whitespace-nowrap">IGN</TableHead>
+                <TableHead className="whitespace-nowrap">Mobile</TableHead>
+                <TableHead className="whitespace-nowrap">Discord ID</TableHead>
                 <TableHead className="whitespace-nowrap">Leave Days</TableHead>
                 <TableHead className="whitespace-nowrap">Absent Days</TableHead>
                 <TableHead className="whitespace-nowrap">NOC Days</TableHead>
                 <TableHead className="whitespace-nowrap">Current Month</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {uniqueEmails.map((email) => {
-                const metrics = calculatePlayerMetrics(email);
+              {teamMembers?.map((player) => {
+                const metrics = calculatePlayerMetrics(player.id);
                 return (
-                  <TableRow key={email} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{email}</TableCell>
+                  <TableRow key={player.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium">{player.ign}</TableCell>
+                    <TableCell>{player.phone}</TableCell>
+                    <TableCell>{player.discord_id}</TableCell>
                     <TableCell>{metrics.leaveDays}</TableCell>
                     <TableCell>{metrics.absentDays}</TableCell>
                     <TableCell>{metrics.nocDays}</TableCell>
                     <TableCell>
                       L: {metrics.currentMonthLeaves} A: {metrics.currentMonthAbsents}
                     </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                          metrics.status
+                        )}`}
+                      >
+                        {metrics.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleEditClick(player.id, metrics.status)}
+                        >
+                          <Pencil className="h-4 w-4 text-blue-600" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => {
+                            setSelectedPlayerId(player.id);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          <Trash className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 );
               })}
-              {!loadingMembers && uniqueEmails.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    No team members found
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Player Status</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Select
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="Suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleStatusUpdate}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the player's data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
