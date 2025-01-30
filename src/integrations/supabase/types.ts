@@ -36,6 +36,42 @@ export type Database = {
         }
         Relationships: []
       }
+      match_history: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          opponent: string
+          score: string
+          tier: string
+          tournament: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          opponent: string
+          score: string
+          tier: string
+          tournament: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          opponent?: string
+          score?: string
+          tier?: string
+          tournament?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       noc_records: {
         Row: {
           created_at: string
