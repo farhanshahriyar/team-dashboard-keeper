@@ -1,6 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash } from "lucide-react";
+import { useEffect } from "react"; // Added this import
 import {
   Table,
   TableBody,
