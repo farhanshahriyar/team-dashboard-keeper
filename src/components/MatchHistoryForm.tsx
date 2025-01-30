@@ -45,6 +45,12 @@ export function MatchHistoryForm({ onSuccess }: MatchHistoryFormProps) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("No user found");
+      }
+
       const { error } = await supabase.from("match_history").insert({
         date: format(values.date, "yyyy-MM-dd"),
         tier: values.tier,
@@ -52,6 +58,7 @@ export function MatchHistoryForm({ onSuccess }: MatchHistoryFormProps) {
         tournament: values.tournament,
         score: values.score,
         opponent: values.opponent,
+        user_id: user.id
       });
 
       if (error) throw error;
