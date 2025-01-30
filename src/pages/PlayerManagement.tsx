@@ -30,8 +30,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -54,15 +52,6 @@ interface PlayerMetrics {
   totalNOCCount: number;
   currentMonthLeaves: number;
   currentMonthAbsents: number;
-  status: 'Active' | 'Inactive' | 'Suspend' | 'Banned';
-}
-
-interface EditableFields {
-  leaveDays: number;
-  absentDays: number;
-  nocDays: number;
-  totalRecords: number;
-  currentMonth: { leaves: number; absents: number };
   status: string;
 }
 
@@ -72,8 +61,9 @@ const PlayerManagement = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [editableFields, setEditableFields] = useState<EditableFields | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
 
+  // Fetch team members
   const { data: teamMembers, isLoading: loadingMembers } = useQuery({
     queryKey: ['team-members'],
     queryFn: async () => {
@@ -86,6 +76,7 @@ const PlayerManagement = () => {
     },
   });
 
+  // Fetch NOC records
   const { data: nocRecords, isLoading: loadingNOCs } = useQuery({
     queryKey: ['noc-records'],
     queryFn: async () => {
@@ -101,7 +92,6 @@ const PlayerManagement = () => {
 
   // Set up real-time subscriptions
   useEffect(() => {
-    // Subscribe to team_members changes
     const teamMembersChannel = supabase
       .channel('team_members_changes')
       .on(
@@ -112,7 +102,6 @@ const PlayerManagement = () => {
           table: 'team_members'
         },
         () => {
-          // Invalidate and refetch team members data
           queryClient.invalidateQueries({ queryKey: ['team-members'] });
           toast({
             title: "Data Updated",
@@ -122,7 +111,6 @@ const PlayerManagement = () => {
       )
       .subscribe();
 
-    // Subscribe to noc_records changes
     const nocRecordsChannel = supabase
       .channel('noc_records_changes')
       .on(
@@ -133,7 +121,6 @@ const PlayerManagement = () => {
           table: 'noc_records'
         },
         () => {
-          // Invalidate and refetch NOC records data
           queryClient.invalidateQueries({ queryKey: ['noc-records'] });
           toast({
             title: "Data Updated",
@@ -143,7 +130,6 @@ const PlayerManagement = () => {
       )
       .subscribe();
 
-    // Cleanup subscriptions
     return () => {
       supabase.removeChannel(teamMembersChannel);
       supabase.removeChannel(nocRecordsChannel);
@@ -176,90 +162,65 @@ const PlayerManagement = () => {
 
     const leaveDays = calculateDaysForType(playerNOCs, 'leave');
     const absentDays = calculateDaysForType(playerNOCs, 'absent');
+    const nocDays = calculateDaysForType(playerNOCs, 'noc');
+    const currentMonthLeaves = currentMonthRecords.filter(record => record.type === 'leave').length;
     const currentMonthAbsents = currentMonthRecords.filter(record => record.type === 'absent').length;
 
-    let status: PlayerMetrics['status'] = 'Active';
-    if (absentDays > 7 || currentMonthAbsents >= 2) {
-      status = 'Suspend';
-    } else if (leaveDays > 30) {
-      status = 'Inactive';
-    }
+    const member = teamMembers?.find(m => m.id === playerId);
+    const status = member?.status || 'Active';
 
     return {
       leaveDays,
       absentDays,
-      nocDays: calculateDaysForType(playerNOCs, 'noc'),
+      nocDays,
       totalLeaveCount: playerNOCs.filter(noc => noc.type === 'leave').length,
       totalAbsentCount: playerNOCs.filter(noc => noc.type === 'absent').length,
       totalNOCCount: playerNOCs.filter(noc => noc.type === 'noc').length,
-      currentMonthLeaves: currentMonthRecords.filter(record => record.type === 'leave').length,
+      currentMonthLeaves,
       currentMonthAbsents,
       status
     };
   };
 
-  const getStatusColor = (metrics: PlayerMetrics) => {
-    if (metrics.absentDays > 7 || metrics.currentMonthAbsents >= 2) {
-      return "bg-red-100 text-red-700";
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return "bg-green-100 text-green-700";
+      case 'inactive':
+        return "bg-yellow-100 text-yellow-700";
+      case 'suspended':
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
-    if (metrics.leaveDays > 30) {
-      return "bg-yellow-100 text-yellow-700";
-    }
-    return "bg-green-100 text-green-700";
   };
 
-  const getStatusText = (metrics: PlayerMetrics) => {
-    if (metrics.absentDays > 7) {
-      return "High Absence";
-    }
-    if (metrics.leaveDays > 30) {
-      return "Extended Leave";
-    }
-    if (metrics.currentMonthAbsents >= 2) {
-      return "Multiple Absences";
-    }
-    return "Active";
-  };
-
-  const handleEditClick = (playerId: string, metrics: PlayerMetrics) => {
+  const handleEditClick = (playerId: string, currentStatus: string) => {
     setSelectedPlayerId(playerId);
-    setEditableFields({
-      leaveDays: metrics.leaveDays,
-      absentDays: metrics.absentDays,
-      nocDays: metrics.nocDays,
-      totalRecords: metrics.totalLeaveCount + metrics.totalAbsentCount + metrics.totalNOCCount,
-      currentMonth: {
-        leaves: metrics.currentMonthLeaves,
-        absents: metrics.currentMonthAbsents,
-      },
-      status: getStatusText(metrics),
-    });
+    setSelectedStatus(currentStatus);
     setShowEditDialog(true);
   };
 
-  const handleEditSave = async () => {
-    if (!selectedPlayerId || !editableFields) return;
+  const handleStatusUpdate = async () => {
+    if (!selectedPlayerId || !selectedStatus) return;
 
     try {
-      // Update the relevant records in the database
       const { error } = await supabase
         .from('team_members')
-        .update({
-          // Add the fields you want to update
-        })
+        .update({ status: selectedStatus })
         .eq('id', selectedPlayerId);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Player data has been updated",
+        description: "Player status has been updated",
       });
       setShowEditDialog(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update player data",
+        description: "Failed to update player status",
         variant: "destructive",
       });
     }
@@ -309,11 +270,10 @@ const PlayerManagement = () => {
                 <TableHead className="whitespace-nowrap">IGN</TableHead>
                 <TableHead className="whitespace-nowrap">Mobile</TableHead>
                 <TableHead className="whitespace-nowrap">Discord ID</TableHead>
-                <TableHead className="whitespace-nowrap">Leave Days (Count)</TableHead>
-                <TableHead className="whitespace-nowrap">Absent Days (Count)</TableHead>
-                <TableHead className="whitespace-nowrap">NOC Days (Count)</TableHead>
-                <TableHead className="whitespace-nowrap">Total Records</TableHead>
-                <TableHead className="whitespace-nowrap">This Month</TableHead>
+                <TableHead className="whitespace-nowrap">Leave Days</TableHead>
+                <TableHead className="whitespace-nowrap">Absent Days</TableHead>
+                <TableHead className="whitespace-nowrap">NOC Days</TableHead>
+                <TableHead className="whitespace-nowrap">Current Month</TableHead>
                 <TableHead className="whitespace-nowrap">Status</TableHead>
                 <TableHead className="whitespace-nowrap">Actions</TableHead>
               </TableRow>
@@ -326,28 +286,19 @@ const PlayerManagement = () => {
                     <TableCell className="font-medium">{player.ign}</TableCell>
                     <TableCell>{player.phone}</TableCell>
                     <TableCell>{player.discord_id}</TableCell>
-                    <TableCell>
-                      {metrics.leaveDays} ({metrics.totalLeaveCount})
-                    </TableCell>
-                    <TableCell>
-                      {metrics.absentDays} ({metrics.totalAbsentCount})
-                    </TableCell>
-                    <TableCell>
-                      {metrics.nocDays} ({metrics.totalNOCCount})
-                    </TableCell>
-                    <TableCell>
-                      {metrics.totalLeaveCount + metrics.totalAbsentCount + metrics.totalNOCCount}
-                    </TableCell>
+                    <TableCell>{metrics.leaveDays}</TableCell>
+                    <TableCell>{metrics.absentDays}</TableCell>
+                    <TableCell>{metrics.nocDays}</TableCell>
                     <TableCell>
                       L: {metrics.currentMonthLeaves} A: {metrics.currentMonthAbsents}
                     </TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                          metrics
+                          metrics.status
                         )}`}
                       >
-                        {getStatusText(metrics)}
+                        {metrics.status}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -355,7 +306,7 @@ const PlayerManagement = () => {
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => handleEditClick(player.id, metrics)}
+                          onClick={() => handleEditClick(player.id, metrics.status)}
                         >
                           <Pencil className="h-4 w-4 text-blue-600" />
                         </Button>
@@ -382,52 +333,27 @@ const PlayerManagement = () => {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Player Data</DialogTitle>
+            <DialogTitle>Update Player Status</DialogTitle>
           </DialogHeader>
-          {editableFields && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="leaveDays" className="text-right">
-                  Leave Days
-                </Label>
-                <Input
-                  id="leaveDays"
-                  type="number"
-                  value={editableFields.leaveDays}
-                  onChange={(e) =>
-                    setEditableFields({
-                      ...editableFields,
-                      leaveDays: parseInt(e.target.value),
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status" className="text-right">
-                  Status
-                </Label>
-                <Select
-                  value={editableFields.status}
-                  onValueChange={(value) =>
-                    setEditableFields({ ...editableFields, status: value })
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                    <SelectItem value="Suspend">Suspend</SelectItem>
-                    <SelectItem value="Banned">Banned</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Select
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="Suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
+          </div>
           <DialogFooter>
-            <Button type="submit" onClick={handleEditSave}>
+            <Button type="submit" onClick={handleStatusUpdate}>
               Save changes
             </Button>
           </DialogFooter>
