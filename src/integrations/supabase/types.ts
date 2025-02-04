@@ -72,6 +72,62 @@ export type Database = {
         }
         Relationships: []
       }
+      noc_history: {
+        Row: {
+          action: string
+          action_timestamp: string
+          created_at: string
+          email: string
+          end_date: string
+          id: string
+          noc_id: string | null
+          player_name: string
+          reason: string
+          start_date: string
+          status: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          action_timestamp?: string
+          created_at?: string
+          email: string
+          end_date: string
+          id?: string
+          noc_id?: string | null
+          player_name: string
+          reason: string
+          start_date: string
+          status?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          action_timestamp?: string
+          created_at?: string
+          email?: string
+          end_date?: string
+          id?: string
+          noc_id?: string | null
+          player_name?: string
+          reason?: string
+          start_date?: string
+          status?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "noc_history_noc_id_fkey"
+            columns: ["noc_id"]
+            isOneToOne: false
+            referencedRelation: "noc_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       noc_records: {
         Row: {
           created_at: string

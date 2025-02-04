@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, History, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { NocHistoryDialog } from "@/components/NocHistoryDialog";
 
 type NocRecord = {
   id: string;
@@ -77,6 +78,7 @@ const getStatusColor = (status: string) => {
 export default function Noc() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<NocRecord | null>(null);
   const { toast } = useToast();
 
@@ -90,6 +92,19 @@ export default function Noc() {
 
       if (error) throw error;
       return data as NocRecord[];
+    },
+  });
+
+  const { data: nocHistory } = useQuery({
+    queryKey: ['noc_history'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('noc_history')
+        .select('*')
+        .order('action_timestamp', { ascending: false });
+
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -330,23 +345,29 @@ export default function Noc() {
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">NOC Management</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add NOC Record
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New NOC Record</DialogTitle>
-              <DialogDescription>
-                Create a new NOC record entry
-              </DialogDescription>
-            </DialogHeader>
-            <NocForm onSubmit={handleSubmit} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsHistoryDialogOpen(true)}>
+            <History className="w-4 h-4 mr-2" />
+            View History
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add NOC Record
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New NOC Record</DialogTitle>
+                <DialogDescription>
+                  Create a new NOC record entry
+                </DialogDescription>
+              </DialogHeader>
+              <NocForm onSubmit={handleSubmit} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -360,6 +381,12 @@ export default function Noc() {
           <NocForm onSubmit={handleEditSubmit} initialData={selectedRecord} />
         </DialogContent>
       </Dialog>
+
+      <NocHistoryDialog 
+        isOpen={isHistoryDialogOpen}
+        onOpenChange={setIsHistoryDialogOpen}
+        history={nocHistory || []}
+      />
 
       <div className="rounded-md border">
         <Table>
@@ -418,4 +445,4 @@ export default function Noc() {
       </div>
     </DashboardLayout>
   );
-};
+}
