@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { NocRecord } from "@/types/noc";
+import { FileUpload } from "./FileUpload";
+import { UploadedFiles } from "./UploadedFiles";
 
 interface NocFormProps {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -96,40 +98,47 @@ export function NocForm({ onSubmit, initialData }: NocFormProps) {
         />
       </div>
       {initialData && (
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <Select name="status" defaultValue={initialData.status || 'pending'}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">
-                <span className="flex items-center">
-                  <Badge variant="secondary" className="bg-yellow-500 text-white mr-2">Pending</Badge>
-                  Pending
-                </span>
-              </SelectItem>
-              <SelectItem value="rejected">
-                <span className="flex items-center">
-                  <Badge variant="secondary" className="bg-red-500 text-white mr-2">Rejected</Badge>
-                  Rejected
-                </span>
-              </SelectItem>
-              <SelectItem value="under review">
-                <span className="flex items-center">
-                  <Badge variant="secondary" className="bg-blue-500 text-white mr-2">Under Review</Badge>
-                  Under Review
-                </span>
-              </SelectItem>
-              <SelectItem value="accepted">
-                <span className="flex items-center">
-                  <Badge variant="secondary" className="bg-green-500 text-white mr-2">Accepted</Badge>
-                  Accepted
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <>
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select name="status" defaultValue={initialData.status || 'pending'}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">
+                  <span className="flex items-center">
+                    <Badge variant="secondary" className="bg-yellow-500 text-white mr-2">Pending</Badge>
+                    Pending
+                  </span>
+                </SelectItem>
+                <SelectItem value="rejected">
+                  <span className="flex items-center">
+                    <Badge variant="secondary" className="bg-red-500 text-white mr-2">Rejected</Badge>
+                    Rejected
+                  </span>
+                </SelectItem>
+                <SelectItem value="under review">
+                  <span className="flex items-center">
+                    <Badge variant="secondary" className="bg-blue-500 text-white mr-2">Under Review</Badge>
+                    Under Review
+                  </span>
+                </SelectItem>
+                <SelectItem value="accepted">
+                  <span className="flex items-center">
+                    <Badge variant="secondary" className="bg-green-500 text-white mr-2">Accepted</Badge>
+                    Accepted
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Application Files</Label>
+            <FileUpload nocId={initialData.id} />
+            <UploadedFiles nocId={initialData.id} />
+          </div>
+        </>
       )}
       <Button type="submit" className="w-full">
         {initialData ? 'Update NOC Record' : 'Create NOC Record'}
