@@ -13,6 +13,9 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import type { Database } from "@/integrations/supabase/types";
+
+type MatchHistory = Database['public']['Tables']['match_history']['Row'];
 
 const formSchema = z.object({
   date: z.date(),
@@ -24,16 +27,24 @@ const formSchema = z.object({
 });
 
 interface MatchHistoryFormProps {
-  onSuccess: () => void;
+  initialData?: MatchHistory;
+  onSuccess: (values: MatchHistory) => void;
 }
 
-export function MatchHistoryForm({ onSuccess }: MatchHistoryFormProps) {
+export function MatchHistoryForm({ initialData, onSuccess }: MatchHistoryFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      date: new Date(initialData.date),
+      tier: initialData.tier as any,
+      type: initialData.type as any,
+      tournament: initialData.tournament,
+      score: initialData.score,
+      opponent: initialData.opponent,
+    } : {
       date: new Date(),
       tier: "S-Tier",
       type: "Online",
@@ -45,35 +56,46 @@ export function MatchHistoryForm({ onSuccess }: MatchHistoryFormProps) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("No user found");
-      }
+      if (!initialData) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error("No user found");
+        }
 
-      const { error } = await supabase.from("match_history").insert({
+        const { error } = await supabase.from("match_history").insert({
+          date: format(values.date, "yyyy-MM-dd"),
+          tier: values.tier,
+          type: values.type,
+          tournament: values.tournament,
+          score: values.score,
+          opponent: values.opponent,
+          user_id: user.id
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Match history has been added",
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["match-history"] });
+      }
+      
+      onSuccess({
+        ...initialData!,
         date: format(values.date, "yyyy-MM-dd"),
         tier: values.tier,
         type: values.type,
         tournament: values.tournament,
         score: values.score,
         opponent: values.opponent,
-        user_id: user.id
       });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Match history has been added",
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["match-history"] });
-      onSuccess();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add match history",
+        description: "Failed to save match history",
         variant: "destructive",
       });
     }
@@ -215,7 +237,9 @@ export function MatchHistoryForm({ onSuccess }: MatchHistoryFormProps) {
           )}
         />
 
-        <Button type="submit" className="w-full">Add Match</Button>
+        <Button type="submit" className="w-full">
+          {initialData ? 'Update Match' : 'Add Match'}
+        </Button>
       </form>
     </Form>
   );
