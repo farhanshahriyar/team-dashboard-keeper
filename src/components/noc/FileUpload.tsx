@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Eye } from "lucide-react";
+import { Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -43,7 +43,7 @@ export function FileUpload({ nocId, onUploadComplete }: FileUploadProps) {
         .from('uploaded_files')
         .insert({
           noc_id: nocId,
-          user_id: user.id, // Add the user_id here
+          user_id: user.id,
           file_url: publicUrl,
           file_name: file.name,
           file_type: file.type,
