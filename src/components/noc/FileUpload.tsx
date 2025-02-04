@@ -21,6 +21,10 @@ export function FileUpload({ nocId, onUploadComplete }: FileUploadProps) {
 
     setIsUploading(true);
     try {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${nocId}/${fileName}`;
@@ -39,6 +43,7 @@ export function FileUpload({ nocId, onUploadComplete }: FileUploadProps) {
         .from('uploaded_files')
         .insert({
           noc_id: nocId,
+          user_id: user.id, // Add the user_id here
           file_url: publicUrl,
           file_name: file.name,
           file_type: file.type,
