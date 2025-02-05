@@ -199,14 +199,19 @@ export type Database = {
       }
       team_members: {
         Row: {
+          absent_days: number | null
           birthdate: string
           created_at: string
+          current_month_absents: number | null
+          current_month_leaves: number | null
           discord_id: string
           email: string
           facebook: string
           game_role: string
           id: string
           ign: string
+          leave_days: number | null
+          noc_days: number | null
           phone: string
           picture: string | null
           real_name: string
@@ -214,14 +219,19 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          absent_days?: number | null
           birthdate: string
           created_at?: string
+          current_month_absents?: number | null
+          current_month_leaves?: number | null
           discord_id: string
           email: string
           facebook: string
           game_role: string
           id?: string
           ign: string
+          leave_days?: number | null
+          noc_days?: number | null
           phone: string
           picture?: string | null
           real_name: string
@@ -229,14 +239,19 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          absent_days?: number | null
           birthdate?: string
           created_at?: string
+          current_month_absents?: number | null
+          current_month_leaves?: number | null
           discord_id?: string
           email?: string
           facebook?: string
           game_role?: string
           id?: string
           ign?: string
+          leave_days?: number | null
+          noc_days?: number | null
           phone?: string
           picture?: string | null
           real_name?: string
