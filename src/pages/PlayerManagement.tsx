@@ -10,6 +10,8 @@ import { EditStatsDialog } from "@/components/player-management/EditStatsDialog"
 import { DeleteConfirmDialog } from "@/components/player-management/DeleteConfirmDialog";
 import type { PlayerMetrics, PlayerStats } from "@/components/player-management/types";
 import type { Database } from "@/integrations/supabase/types";
+import { createAndPopulateSheet } from "@/utils/googleSheets";
+import { Button } from "@/components/ui/button";
 
 type TeamMember = Database['public']['Tables']['team_members']['Row'];
 type NOCRecord = Database['public']['Tables']['noc_records']['Row'];
@@ -252,6 +254,40 @@ const PlayerManagement = () => {
     }
   };
 
+  const handleExportToSheets = async () => {
+    if (!teamMembers) return;
+
+    try {
+      const formattedData = teamMembers.map(member => ({
+        Name: member.real_name,
+        Email: member.email,
+        IGN: member.ign,
+        Role: member.game_role,
+        Status: member.status,
+        "Leave Days": member.leave_days,
+        "Absent Days": member.absent_days,
+        "NOC Days": member.noc_days,
+        "Current Month Leaves": member.current_month_leaves,
+        "Current Month Absents": member.current_month_absents
+      }));
+
+      const sheetUrl = await createAndPopulateSheet(formattedData);
+      window.open(sheetUrl, '_blank');
+      
+      toast({
+        title: "Success",
+        description: "Player data has been exported to Google Sheets",
+      });
+    } catch (error) {
+      console.error('Error exporting to sheets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export data to Google Sheets",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loadingMembers || loadingNOCs) {
     return <div className="flex items-center justify-center min-h-screen font-inter">Loading...</div>;
   }
@@ -266,6 +302,12 @@ const PlayerManagement = () => {
       <div className="space-y-8 font-inter">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Player Management</h1>
+          <Button 
+            onClick={handleExportToSheets}
+            className="bg-green-500 hover:bg-green-600"
+          >
+            Export to Sheets
+          </Button>
         </div>
 
         <PlayerTable
