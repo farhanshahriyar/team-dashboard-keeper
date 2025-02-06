@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, Calendar } from "lucide-react";
+import { Users, FileText, Calendar, TrendingUp, Bell, Search } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -124,54 +125,111 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+        {/* Header Section */}
+        <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:space-y-0">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back! Here's an overview of your team's activity.
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                className="pl-8 w-[200px] bg-white dark:bg-gray-800"
+              />
+            </div>
+            <button className="relative p-2 rounded-full bg-gray-100 dark:bg-gray-800">
+              <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-red-500" />
+            </button>
+          </div>
         </div>
 
+        {/* Stats Cards */}
         <div className="grid gap-6 md:grid-cols-3">
-          <Card className="bg-[#DC2626] text-white">
+          <Card className="bg-gradient-to-br from-[#9b87f5] to-[#1A1F2C] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Players</CardTitle>
-              <Users className="h-4 w-4" />
+              <Users className="h-4 w-4 opacity-75" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalPlayers}</div>
+              <p className="text-xs text-white/70 mt-1">
+                Active team members
+              </p>
             </CardContent>
           </Card>
-          <Card className="bg-[#DC2626] text-white">
+          <Card className="bg-gradient-to-br from-[#D6BCFA] to-[#1A1F2C] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Active NOCs</CardTitle>
-              <FileText className="h-4 w-4" />
+              <FileText className="h-4 w-4 opacity-75" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.activeNOCs}</div>
+              <p className="text-xs text-white/70 mt-1">
+                Currently active NOCs
+              </p>
             </CardContent>
           </Card>
-          <Card className="bg-[#DC2626] text-white">
+          <Card className="bg-gradient-to-br from-[#F2FCE2] to-[#1A1F2C] text-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Pending NOCs</CardTitle>
-              <Calendar className="h-4 w-4" />
+              <Calendar className="h-4 w-4 opacity-75" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pendingNOCs}</div>
+              <p className="text-xs text-white/70 mt-1">
+                Awaiting approval
+              </p>
             </CardContent>
           </Card>
         </div>
 
+        {/* Charts and Activity */}
         <div className="grid gap-6 md:grid-cols-2">
-          <Card>
+          <Card className="col-span-2 md:col-span-1">
             <CardHeader>
-              <CardTitle>NOCs Per Month</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                NOCs Per Month
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="nocs" fill="#DC2626" name="NOCs Issued" />
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-50" />
+                    <XAxis 
+                      dataKey="month"
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `${value}`}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        background: "#1A1F2C",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "#fff"
+                      }}
+                    />
+                    <Bar 
+                      dataKey="nocs" 
+                      fill="#9b87f5"
+                      radius={[4, 4, 0, 0]}
+                      name="NOCs Issued" 
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -180,24 +238,32 @@ const Dashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent NOC Activity</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+                Recent NOC Activity
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {nocRecords?.slice(0, 5).map((noc: any) => (
                   <div
                     key={noc.id}
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4 last:border-0 last:pb-0"
                   >
-                    <div>
+                    <div className="space-y-1">
                       <p className="font-medium">{noc.player_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Status: {noc.status}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium
+                          ${noc.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            noc.status === 'accepted' ? 'bg-green-100 text-green-800' : 
+                            'bg-red-100 text-red-800'}`}>
+                          {noc.status}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(noc.created_at), 'MMM dd, yyyy')}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {format(new Date(noc.created_at), 'yyyy-MM-dd')}
-                    </span>
                   </div>
                 ))}
               </div>
