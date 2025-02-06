@@ -55,56 +55,60 @@ export const PlayerTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {players?.map((player) => {
-            const playerMetrics = metrics[player.id];
-            return (
-              <TableRow key={player.id} className="hover:bg-gray-50">
-                <TableCell className="font-medium">{player.ign}</TableCell>
-                <TableCell>{player.phone}</TableCell>
-                <TableCell>{player.discord_id}</TableCell>
-                <TableCell>{playerMetrics.leaveDays}</TableCell>
-                <TableCell>{playerMetrics.absentDays}</TableCell>
-                <TableCell>{playerMetrics.nocDays}</TableCell>
-                <TableCell>
-                  L: {playerMetrics.currentMonthLeaves} A: {playerMetrics.currentMonthAbsents}
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                      playerMetrics.status
-                    )}`}
+          {players?.map((player) => (
+            <TableRow key={player.id} className="hover:bg-gray-50">
+              <TableCell className="font-medium">{player.ign}</TableCell>
+              <TableCell>{player.phone}</TableCell>
+              <TableCell>{player.discord_id}</TableCell>
+              <TableCell>{player.leave_days || 0}</TableCell>
+              <TableCell>{player.absent_days || 0}</TableCell>
+              <TableCell>{player.noc_days || 0}</TableCell>
+              <TableCell>
+                L: {player.current_month_leaves || 0} A: {player.current_month_absents || 0}
+              </TableCell>
+              <TableCell>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                    player.status || 'active'
+                  )}`}
+                >
+                  {player.status || 'Active'}
+                </span>
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => onEditStatus(player.id, player.status || 'Active')}
                   >
-                    {playerMetrics.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => onEditStatus(player.id, playerMetrics.status)}
-                    >
-                      <Pencil className="h-4 w-4 text-blue-600" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => onEditStats(player.id, playerMetrics)}
-                    >
-                      <FileText className="h-4 w-4 text-green-600" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => onDelete(player.id)}
-                    >
-                      <Trash className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+                    <Pencil className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => onEditStats(player.id, {
+                      leaveDays: player.leave_days || 0,
+                      absentDays: player.absent_days || 0,
+                      nocDays: player.noc_days || 0,
+                      currentMonthLeaves: player.current_month_leaves || 0,
+                      currentMonthAbsents: player.current_month_absents || 0,
+                      status: player.status || 'Active'
+                    })}
+                  >
+                    <FileText className="h-4 w-4 text-green-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onDelete(player.id)}
+                  >
+                    <Trash className="h-4 w-4 text-red-600" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>
