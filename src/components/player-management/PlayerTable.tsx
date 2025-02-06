@@ -93,6 +93,9 @@ export const PlayerTable = ({
                       nocDays: player.noc_days || 0,
                       currentMonthLeaves: player.current_month_leaves || 0,
                       currentMonthAbsents: player.current_month_absents || 0,
+                      totalLeaveCount: player.leave_days || 0,
+                      totalAbsentCount: player.absent_days || 0,
+                      totalNOCCount: player.noc_days || 0,
                       status: player.status || 'Active'
                     })}
                   >
