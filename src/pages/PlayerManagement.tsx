@@ -1,61 +1,18 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { FileText, Pencil, Trash } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Database } from "@/integrations/supabase/types";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { differenceInDays, parseISO } from "date-fns";
+import { PlayerTable } from "@/components/player-management/PlayerTable";
+import { EditStatusDialog } from "@/components/player-management/EditStatusDialog";
+import { EditStatsDialog } from "@/components/player-management/EditStatsDialog";
+import { DeleteConfirmDialog } from "@/components/player-management/DeleteConfirmDialog";
+import type { PlayerMetrics, PlayerStats } from "@/components/player-management/types";
+import type { Database } from "@/integrations/supabase/types";
 
 type TeamMember = Database['public']['Tables']['team_members']['Row'];
 type NOCRecord = Database['public']['Tables']['noc_records']['Row'];
-
-interface PlayerMetrics {
-  leaveDays: number;
-  absentDays: number;
-  nocDays: number;
-  totalLeaveCount: number;
-  totalAbsentCount: number;
-  totalNOCCount: number;
-  currentMonthLeaves: number;
-  currentMonthAbsents: number;
-  status: string;
-}
 
 const PlayerManagement = () => {
   const { toast } = useToast();
@@ -65,7 +22,7 @@ const PlayerManagement = () => {
   const [showStatsDialog, setShowStatsDialog] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [editingStats, setEditingStats] = useState({
+  const [editingStats, setEditingStats] = useState<PlayerStats>({
     leaveDays: 0,
     absentDays: 0,
     nocDays: 0,
@@ -170,39 +127,20 @@ const PlayerManagement = () => {
              recordDate.getFullYear() === currentYear;
     });
 
-    const leaveDays = calculateDaysForType(playerNOCs, 'leave');
-    const absentDays = calculateDaysForType(playerNOCs, 'absent');
-    const nocDays = calculateDaysForType(playerNOCs, 'noc');
-    const currentMonthLeaves = currentMonthRecords.filter(record => record.type === 'leave').length;
-    const currentMonthAbsents = currentMonthRecords.filter(record => record.type === 'absent').length;
-
     const member = teamMembers?.find(m => m.id === playerId);
     const status = member?.status || 'Active';
 
     return {
-      leaveDays,
-      absentDays,
-      nocDays,
+      leaveDays: calculateDaysForType(playerNOCs, 'leave'),
+      absentDays: calculateDaysForType(playerNOCs, 'absent'),
+      nocDays: calculateDaysForType(playerNOCs, 'noc'),
       totalLeaveCount: playerNOCs.filter(noc => noc.type === 'leave').length,
       totalAbsentCount: playerNOCs.filter(noc => noc.type === 'absent').length,
       totalNOCCount: playerNOCs.filter(noc => noc.type === 'noc').length,
-      currentMonthLeaves,
-      currentMonthAbsents,
+      currentMonthLeaves: currentMonthRecords.filter(record => record.type === 'leave').length,
+      currentMonthAbsents: currentMonthRecords.filter(record => record.type === 'absent').length,
       status
     };
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return "bg-green-100 text-green-700";
-      case 'inactive':
-        return "bg-yellow-100 text-yellow-700";
-      case 'suspended':
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
   };
 
   const handleEditClick = (playerId: string, currentStatus: string) => {
@@ -221,6 +159,11 @@ const PlayerManagement = () => {
       currentMonthAbsents: currentStats.currentMonthAbsents
     });
     setShowStatsDialog(true);
+  };
+
+  const handleDeleteClick = (playerId: string) => {
+    setSelectedPlayerId(playerId);
+    setShowDeleteDialog(true);
   };
 
   const handleStatsUpdate = async () => {
@@ -255,32 +198,6 @@ const PlayerManagement = () => {
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!selectedPlayerId) return;
-
-    try {
-      const { error } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('id', selectedPlayerId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Player has been removed",
-      });
-      setShowDeleteDialog(false);
-      setSelectedPlayerId(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete player",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleStatusUpdate = async () => {
     if (!selectedPlayerId) return;
 
@@ -309,9 +226,40 @@ const PlayerManagement = () => {
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!selectedPlayerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', selectedPlayerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player has been removed",
+      });
+      setShowDeleteDialog(false);
+      setSelectedPlayerId(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete player",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loadingMembers || loadingNOCs) {
     return <div className="flex items-center justify-center min-h-screen font-inter">Loading...</div>;
   }
+
+  const playerMetrics = teamMembers?.reduce((acc, player) => {
+    acc[player.id] = calculatePlayerMetrics(player.id);
+    return acc;
+  }, {} as { [key: string]: PlayerMetrics });
 
   return (
     <DashboardLayout>
@@ -320,212 +268,36 @@ const PlayerManagement = () => {
           <h1 className="text-3xl font-bold">Player Management</h1>
         </div>
 
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">IGN</TableHead>
-                <TableHead className="whitespace-nowrap">Mobile</TableHead>
-                <TableHead className="whitespace-nowrap">Discord ID</TableHead>
-                <TableHead className="whitespace-nowrap">Leave Days</TableHead>
-                <TableHead className="whitespace-nowrap">Absent Days</TableHead>
-                <TableHead className="whitespace-nowrap">NOC Days</TableHead>
-                <TableHead className="whitespace-nowrap">Current Month</TableHead>
-                <TableHead className="whitespace-nowrap">Status</TableHead>
-                <TableHead className="whitespace-nowrap">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teamMembers?.map((player) => {
-                const metrics = calculatePlayerMetrics(player.id);
-                return (
-                  <TableRow key={player.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{player.ign}</TableCell>
-                    <TableCell>{player.phone}</TableCell>
-                    <TableCell>{player.discord_id}</TableCell>
-                    <TableCell>{metrics.leaveDays}</TableCell>
-                    <TableCell>{metrics.absentDays}</TableCell>
-                    <TableCell>{metrics.nocDays}</TableCell>
-                    <TableCell>
-                      L: {metrics.currentMonthLeaves} A: {metrics.currentMonthAbsents}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                          metrics.status
-                        )}`}
-                      >
-                        {metrics.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleEditClick(player.id, metrics.status)}
-                        >
-                          <Pencil className="h-4 w-4 text-blue-600" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleStatsEdit(player.id, metrics)}
-                        >
-                          <FileText className="h-4 w-4 text-green-600" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => {
-                            setSelectedPlayerId(player.id);
-                            setShowDeleteDialog(true);
-                          }}
-                        >
-                          <Trash className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <PlayerTable
+          players={teamMembers || []}
+          metrics={playerMetrics || {}}
+          onEditStatus={handleEditClick}
+          onEditStats={handleStatsEdit}
+          onDelete={handleDeleteClick}
+        />
+
+        <EditStatusDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+          onSave={handleStatusUpdate}
+        />
+
+        <EditStatsDialog
+          open={showStatsDialog}
+          onOpenChange={setShowStatsDialog}
+          stats={editingStats}
+          onStatsChange={setEditingStats}
+          onSave={handleStatsUpdate}
+        />
+
+        <DeleteConfirmDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDeleteConfirm}
+        />
       </div>
-
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Update Player Status</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Select
-              value={selectedStatus}
-              onValueChange={setSelectedStatus}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
-                <SelectItem value="Suspended">Suspended</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleStatusUpdate}>
-              Save changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the player's data.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={showStatsDialog} onOpenChange={setShowStatsDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Update Player Statistics</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="leaveDays" className="text-right">
-                Leave Days
-              </Label>
-              <Input
-                id="leaveDays"
-                type="number"
-                value={editingStats.leaveDays}
-                onChange={(e) => setEditingStats(prev => ({
-                  ...prev,
-                  leaveDays: parseInt(e.target.value) || 0
-                }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="absentDays" className="text-right">
-                Absent Days
-              </Label>
-              <Input
-                id="absentDays"
-                type="number"
-                value={editingStats.absentDays}
-                onChange={(e) => setEditingStats(prev => ({
-                  ...prev,
-                  absentDays: parseInt(e.target.value) || 0
-                }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="nocDays" className="text-right">
-                NOC Days
-              </Label>
-              <Input
-                id="nocDays"
-                type="number"
-                value={editingStats.nocDays}
-                onChange={(e) => setEditingStats(prev => ({
-                  ...prev,
-                  nocDays: parseInt(e.target.value) || 0
-                }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="currentMonthLeaves" className="text-right">
-                Current Month Leaves
-              </Label>
-              <Input
-                id="currentMonthLeaves"
-                type="number"
-                value={editingStats.currentMonthLeaves}
-                onChange={(e) => setEditingStats(prev => ({
-                  ...prev,
-                  currentMonthLeaves: parseInt(e.target.value) || 0
-                }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="currentMonthAbsents" className="text-right">
-                Current Month Absents
-              </Label>
-              <Input
-                id="currentMonthAbsents"
-                type="number"
-                value={editingStats.currentMonthAbsents}
-                onChange={(e) => setEditingStats(prev => ({
-                  ...prev,
-                  currentMonthAbsents: parseInt(e.target.value) || 0
-                }))}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleStatsUpdate}>
-              Save changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 };
