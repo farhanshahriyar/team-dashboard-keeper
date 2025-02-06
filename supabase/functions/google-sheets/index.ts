@@ -22,11 +22,18 @@ Deno.serve(async (req) => {
     const { data } = await req.json()
     if (!data) throw new Error('No data provided')
 
-    const oauth2Client = new OAuth2Client(
-      Deno.env.get('GOOGLE_SHEETS_CLIENT_ID'),
-      Deno.env.get('GOOGLE_SHEETS_CLIENT_SECRET'),
-      'http://localhost:8080'
-    )
+    const oauth2Client = new OAuth2Client({
+      clientId: Deno.env.get('GOOGLE_SHEETS_CLIENT_ID'),
+      clientSecret: Deno.env.get('GOOGLE_SHEETS_CLIENT_SECRET'),
+      redirectUri: 'http://localhost:8080'
+    })
+
+    // Set credentials directly
+    oauth2Client.setCredentials({
+      refresh_token: Deno.env.get('GOOGLE_SHEETS_REFRESH_TOKEN'),
+      access_token: Deno.env.get('GOOGLE_SHEETS_ACCESS_TOKEN'),
+      expiry_date: 1000 * 60 * 60 * 24 * 7 // 7 days
+    })
 
     const sheetsService = new sheets_v4.Sheets({ auth: oauth2Client })
 
@@ -57,6 +64,8 @@ Deno.serve(async (req) => {
       requestBody: { values }
     })
 
+    console.log('Spreadsheet created successfully:', spreadsheet.data.spreadsheetUrl)
+
     return new Response(
       JSON.stringify({ url: spreadsheet.data.spreadsheetUrl }),
       {
@@ -65,6 +74,7 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error in google-sheets function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
