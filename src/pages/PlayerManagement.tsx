@@ -10,8 +10,9 @@ import { EditStatsDialog } from "@/components/player-management/EditStatsDialog"
 import { DeleteConfirmDialog } from "@/components/player-management/DeleteConfirmDialog";
 import type { PlayerMetrics, PlayerStats } from "@/components/player-management/types";
 import type { Database } from "@/integrations/supabase/types";
-import { createAndPopulateSheet } from "@/utils/googleSheets";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import * as XLSX from 'xlsx';
 
 type TeamMember = Database['public']['Tables']['team_members']['Row'];
 type NOCRecord = Database['public']['Tables']['noc_records']['Row'];
@@ -24,6 +25,7 @@ const PlayerManagement = () => {
   const [showStatsDialog, setShowStatsDialog] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [editingStats, setEditingStats] = useState<PlayerStats>({
     leaveDays: 0,
     absentDays: 0,
@@ -254,7 +256,7 @@ const PlayerManagement = () => {
     }
   };
 
-  const handleExportToSheets = async () => {
+  const handleExportToExcel = () => {
     if (!teamMembers) return;
 
     try {
@@ -271,22 +273,35 @@ const PlayerManagement = () => {
         "Current Month Absents": member.current_month_absents
       }));
 
-      const sheetUrl = await createAndPopulateSheet(formattedData);
-      window.open(sheetUrl, '_blank');
-      
+      const ws = XLSX.utils.json_to_sheet(formattedData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Players");
+      XLSX.writeFile(wb, "player_data.xlsx");
+
       toast({
         title: "Success",
-        description: "Player data has been exported to Google Sheets",
+        description: "Player data has been exported to Excel",
       });
     } catch (error) {
-      console.error('Error exporting to sheets:', error);
+      console.error('Error exporting to excel:', error);
       toast({
         title: "Error",
-        description: "Failed to export data to Google Sheets",
+        description: "Failed to export data to Excel",
         variant: "destructive",
       });
     }
   };
+
+  // Filter players based on search query
+  const filteredPlayers = teamMembers?.filter(player => {
+    const searchTerm = searchQuery.toLowerCase();
+    return (
+      player.ign.toLowerCase().includes(searchTerm) ||
+      player.real_name.toLowerCase().includes(searchTerm) ||
+      player.email.toLowerCase().includes(searchTerm) ||
+      player.discord_id.toLowerCase().includes(searchTerm)
+    );
+  });
 
   if (loadingMembers || loadingNOCs) {
     return <div className="flex items-center justify-center min-h-screen font-inter">Loading...</div>;
@@ -300,18 +315,28 @@ const PlayerManagement = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8 font-inter">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Player Management</h1>
-          <Button 
-            onClick={handleExportToSheets}
-            className="bg-green-500 hover:bg-green-600"
-          >
-            Export to Sheets
-          </Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">Player Management</h1>
+            <Button 
+              onClick={handleExportToExcel}
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              Export to Excel
+            </Button>
+          </div>
+          <div className="w-full max-w-md">
+            <Input
+              placeholder="Search players..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
         </div>
 
         <PlayerTable
-          players={teamMembers || []}
+          players={filteredPlayers || []}
           metrics={playerMetrics || {}}
           onEditStatus={handleEditClick}
           onEditStats={handleStatsEdit}
