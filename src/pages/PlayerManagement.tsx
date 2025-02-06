@@ -37,6 +37,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { differenceInDays, parseISO } from "date-fns";
 
@@ -274,6 +276,34 @@ const PlayerManagement = () => {
       toast({
         title: "Error",
         description: "Failed to delete player",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!selectedPlayerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .update({
+          status: selectedStatus
+        })
+        .eq('id', selectedPlayerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player status has been updated",
+      });
+      setShowEditDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update player status",
         variant: "destructive",
       });
     }
