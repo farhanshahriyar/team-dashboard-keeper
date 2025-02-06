@@ -60,8 +60,16 @@ const PlayerManagement = () => {
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showStatsDialog, setShowStatsDialog] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [editingStats, setEditingStats] = useState({
+    leaveDays: 0,
+    absentDays: 0,
+    nocDays: 0,
+    currentMonthLeaves: 0,
+    currentMonthAbsents: 0
+  });
 
   // Fetch team members
   const { data: teamMembers, isLoading: loadingMembers } = useQuery({
@@ -201,26 +209,45 @@ const PlayerManagement = () => {
     setShowEditDialog(true);
   };
 
-  const handleStatusUpdate = async () => {
-    if (!selectedPlayerId || !selectedStatus) return;
+  const handleStatsEdit = (playerId: string, currentStats: PlayerMetrics) => {
+    setSelectedPlayerId(playerId);
+    setEditingStats({
+      leaveDays: currentStats.leaveDays,
+      absentDays: currentStats.absentDays,
+      nocDays: currentStats.nocDays,
+      currentMonthLeaves: currentStats.currentMonthLeaves,
+      currentMonthAbsents: currentStats.currentMonthAbsents
+    });
+    setShowStatsDialog(true);
+  };
+
+  const handleStatsUpdate = async () => {
+    if (!selectedPlayerId) return;
 
     try {
       const { error } = await supabase
         .from('team_members')
-        .update({ status: selectedStatus })
+        .update({
+          leave_days: editingStats.leaveDays,
+          absent_days: editingStats.absentDays,
+          noc_days: editingStats.nocDays,
+          current_month_leaves: editingStats.currentMonthLeaves,
+          current_month_absents: editingStats.currentMonthAbsents
+        })
         .eq('id', selectedPlayerId);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Player status has been updated",
+        description: "Player statistics have been updated",
       });
-      setShowEditDialog(false);
+      setShowStatsDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update player status",
+        description: "Failed to update player statistics",
         variant: "destructive",
       });
     }
@@ -312,6 +339,13 @@ const PlayerManagement = () => {
                         </Button>
                         <Button 
                           variant="ghost" 
+                          size="icon"
+                          onClick={() => handleStatsEdit(player.id, metrics)}
+                        >
+                          <FileText className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
                           size="icon" 
                           onClick={() => {
                             setSelectedPlayerId(player.id);
@@ -336,21 +370,19 @@ const PlayerManagement = () => {
             <DialogTitle>Update Player Status</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Select
-                value={selectedStatus}
-                onValueChange={setSelectedStatus}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                  <SelectItem value="Suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={selectedStatus}
+              onValueChange={setSelectedStatus}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Suspended">Suspended</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter>
             <Button type="submit" onClick={handleStatusUpdate}>
@@ -374,6 +406,96 @@ const PlayerManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showStatsDialog} onOpenChange={setShowStatsDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Player Statistics</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="leaveDays" className="text-right">
+                Leave Days
+              </Label>
+              <Input
+                id="leaveDays"
+                type="number"
+                value={editingStats.leaveDays}
+                onChange={(e) => setEditingStats(prev => ({
+                  ...prev,
+                  leaveDays: parseInt(e.target.value) || 0
+                }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="absentDays" className="text-right">
+                Absent Days
+              </Label>
+              <Input
+                id="absentDays"
+                type="number"
+                value={editingStats.absentDays}
+                onChange={(e) => setEditingStats(prev => ({
+                  ...prev,
+                  absentDays: parseInt(e.target.value) || 0
+                }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nocDays" className="text-right">
+                NOC Days
+              </Label>
+              <Input
+                id="nocDays"
+                type="number"
+                value={editingStats.nocDays}
+                onChange={(e) => setEditingStats(prev => ({
+                  ...prev,
+                  nocDays: parseInt(e.target.value) || 0
+                }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="currentMonthLeaves" className="text-right">
+                Current Month Leaves
+              </Label>
+              <Input
+                id="currentMonthLeaves"
+                type="number"
+                value={editingStats.currentMonthLeaves}
+                onChange={(e) => setEditingStats(prev => ({
+                  ...prev,
+                  currentMonthLeaves: parseInt(e.target.value) || 0
+                }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="currentMonthAbsents" className="text-right">
+                Current Month Absents
+              </Label>
+              <Input
+                id="currentMonthAbsents"
+                type="number"
+                value={editingStats.currentMonthAbsents}
+                onChange={(e) => setEditingStats(prev => ({
+                  ...prev,
+                  currentMonthAbsents: parseInt(e.target.value) || 0
+                }))}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleStatsUpdate}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
