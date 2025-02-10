@@ -57,6 +57,12 @@ export function AddAttendanceDialog({
 
     setIsSubmitting(true);
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("No authenticated user found");
+      }
+
       const { error } = await supabase
         .from('daily_attendance')
         .upsert({
@@ -64,6 +70,7 @@ export function AddAttendanceDialog({
           date: format(selectedDate, 'yyyy-MM-dd'),
           status,
           notes: notes || null,
+          user_id: user.id, // Set the user_id to the current user's ID
         });
 
       if (error) throw error;
