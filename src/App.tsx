@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +15,7 @@ import Auth from "./pages/Auth";
 import Announcements from "./pages/Announcements";
 import Tournaments from "./pages/Tournaments";
 import MatchHistory from "./pages/MatchHistory";
+import Attendance from "./pages/Attendance";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MatchHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance"
+              element={
+                <ProtectedRoute>
+                  <Attendance />
                 </ProtectedRoute>
               }
             />

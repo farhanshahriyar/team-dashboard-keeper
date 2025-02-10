@@ -1,4 +1,5 @@
-import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy, History } from "lucide-react";
+
+import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy, History, ClipboardCheck } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -60,6 +61,11 @@ const menuItems = [
     title: "Match History",
     path: "/match-history",
     icon: History,
+  },
+  {
+    title: "Attendance",
+    path: "/attendance",
+    icon: ClipboardCheck,
   },
 ];
 
