@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Database } from "@/integrations/supabase/types";
 
 type TeamMember = Database['public']['Tables']['team_members']['Row'];
@@ -41,12 +42,20 @@ export function AddAttendanceDialog({
   const [status, setStatus] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [markAllAsPresent, setMarkAllAsPresent] = useState(false);
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const handleSelectAllChange = (checked: boolean) => {
+    setMarkAllAsPresent(checked);
+    if (checked) {
+      setStatus("present");
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!selectedMember || !status) {
+    if ((!selectedMember && !markAllAsPresent) || !status) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -63,21 +72,39 @@ export function AddAttendanceDialog({
         throw new Error("No authenticated user found");
       }
 
-      const { error } = await supabase
-        .from('daily_attendance')
-        .upsert({
-          team_member_id: selectedMember,
+      if (markAllAsPresent) {
+        // Create attendance records for all members
+        const attendanceRecords = members.map(member => ({
+          team_member_id: member.id,
           date: format(selectedDate, 'yyyy-MM-dd'),
-          status,
+          status: "present",
           notes: notes || null,
-          user_id: user.id, // Set the user_id to the current user's ID
-        });
+          user_id: user.id,
+        }));
 
-      if (error) throw error;
+        const { error } = await supabase
+          .from('daily_attendance')
+          .upsert(attendanceRecords);
+
+        if (error) throw error;
+      } else {
+        // Create attendance record for single member
+        const { error } = await supabase
+          .from('daily_attendance')
+          .upsert({
+            team_member_id: selectedMember,
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            status,
+            notes: notes || null,
+            user_id: user.id,
+          });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Success",
-        description: "Attendance record has been saved",
+        description: "Attendance record(s) has been saved",
       });
 
       queryClient.invalidateQueries({ 
@@ -88,6 +115,7 @@ export function AddAttendanceDialog({
       setSelectedMember("");
       setStatus("");
       setNotes("");
+      setMarkAllAsPresent(false);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -106,42 +134,60 @@ export function AddAttendanceDialog({
           <DialogTitle>Add Attendance Record</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Team Member</Label>
-            <Select
-              value={selectedMember}
-              onValueChange={setSelectedMember}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="markAllPresent"
+              checked={markAllAsPresent}
+              onCheckedChange={handleSelectAllChange}
+            />
+            <Label
+              htmlFor="markAllPresent"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a team member" />
-              </SelectTrigger>
-              <SelectContent>
-                {members.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.real_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              Mark all members as present
+            </Label>
           </div>
 
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select
-              value={status}
-              onValueChange={setStatus}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="present">Present</SelectItem>
-                <SelectItem value="absent">Absent</SelectItem>
-                <SelectItem value="leave">Leave</SelectItem>
-                <SelectItem value="noc">NOC</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {!markAllAsPresent && (
+            <>
+              <div className="space-y-2">
+                <Label>Team Member</Label>
+                <Select
+                  value={selectedMember}
+                  onValueChange={setSelectedMember}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a team member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.real_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={status}
+                  onValueChange={setStatus}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="present">Present</SelectItem>
+                    <SelectItem value="absent">Absent</SelectItem>
+                    <SelectItem value="leave">Leave</SelectItem>
+                    <SelectItem value="noc">NOC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <Label>Notes (Optional)</Label>
