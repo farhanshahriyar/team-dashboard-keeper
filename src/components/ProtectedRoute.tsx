@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check current session
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Error getting session:', error.message);
@@ -30,23 +31,21 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     // Set up real-time auth state listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
 
       if (!session) {
-        // Clear any stored auth data
-        await supabase.auth.signOut();
         navigate('/auth');
       }
     });
 
-    // Cleanup subscription
     return () => {
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
 
+  // Show loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -55,8 +54,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // If no session exists, redirect to auth page
   if (!session) {
-    // Redirect to auth page with return path
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
