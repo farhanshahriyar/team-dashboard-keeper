@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, Calendar, TrendingUp } from "lucide-react";
+import { Users, FileText, Calendar, TrendingUp, Bell } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import {
   BarChart,
