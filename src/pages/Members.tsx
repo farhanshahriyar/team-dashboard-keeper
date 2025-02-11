@@ -232,9 +232,9 @@ export default function Members() {
               if (!open) setEditingMember(null);
             }}>
               <DialogTrigger asChild>
-                <Button className="bg-[#DC2626] hover:bg-[#DC2626]/90">Add Team Member</Button>
+                <Button className="bg-[#DC2626] hover:bg-[#DC2626]/90 text-white">Add Team Member</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-[#1A1F2C] dark:border-white/10">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background/50 backdrop-blur-xl border-white/10">
                 <DialogHeader>
                   <DialogTitle className="text-white">{editingMember ? 'Edit Team Member' : 'Add New Team Member'}</DialogTitle>
                 </DialogHeader>
@@ -247,7 +247,7 @@ export default function Members() {
           </div>
         </div>
 
-        <div className="rounded-lg overflow-hidden border border-white/10 bg-[#1A1F2C]">
+        <div className="rounded-lg overflow-hidden border border-white/10 bg-background/50 backdrop-blur-xl">
           <Table>
             <TableHeader>
               <TableRow className="border-white/10 hover:bg-white/5">

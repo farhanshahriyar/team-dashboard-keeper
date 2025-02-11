@@ -317,10 +317,10 @@ const PlayerManagement = () => {
       <div className="space-y-8 font-inter">
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Player Management</h1>
+            <h1 className="text-3xl font-bold text-white">Player Management</h1>
             <Button 
               onClick={handleExportToExcel}
-              className="bg-blue-500 hover:bg-blue-600"
+              className="bg-[#ea384c] hover:bg-[#ea384c]/90 text-white"
             >
               Export to Excel
             </Button>
@@ -330,7 +330,7 @@ const PlayerManagement = () => {
               placeholder="Search players..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
+              className="w-full bg-background/50 border-white/10"
             />
           </div>
         </div>

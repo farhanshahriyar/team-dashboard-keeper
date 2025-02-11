@@ -40,10 +40,10 @@ export const PlayerTable = ({
   };
 
   return (
-    <div className="rounded-md border border-white/10 overflow-x-auto neo-blur">
+    <div className="rounded-md border border-white/10 overflow-x-auto bg-background/50 backdrop-blur-xl">
       <Table>
         <TableHeader>
-          <TableRow className="border-white/10 hover:bg-transparent">
+          <TableRow className="border-white/10 hover:bg-white/5">
             <TableHead className="text-gray-400">IGN</TableHead>
             <TableHead className="text-gray-400">Mobile</TableHead>
             <TableHead className="text-gray-400">Discord ID</TableHead>
@@ -59,7 +59,7 @@ export const PlayerTable = ({
           {players?.map((player) => (
             <TableRow 
               key={player.id} 
-              className="border-white/10 hover:bg-white/[0.02] transition-colors duration-200"
+              className="border-white/10 hover:bg-white/5"
             >
               <TableCell className="font-medium text-white">{player.ign}</TableCell>
               <TableCell className="text-gray-300">{player.phone}</TableCell>
@@ -83,7 +83,7 @@ export const PlayerTable = ({
                     variant="ghost" 
                     size="icon"
                     onClick={() => onEditStatus(player.id, player.status || 'Active')}
-                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                    className="text-[#ea384c] hover:text-[#ea384c]/90 hover:bg-[#ea384c]/10"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -91,7 +91,7 @@ export const PlayerTable = ({
                     variant="ghost" 
                     size="icon"
                     onClick={() => onEditStats(player.id, metrics[player.id])}
-                    className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                    className="text-[#ea384c] hover:text-[#ea384c]/90 hover:bg-[#ea384c]/10"
                   >
                     <FileText className="h-4 w-4" />
                   </Button>
@@ -99,7 +99,7 @@ export const PlayerTable = ({
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete(player.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    className="text-[#ea384c] hover:text-[#ea384c]/90 hover:bg-[#ea384c]/10"
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
