@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -213,12 +214,16 @@ export default function Members() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Team Members</h1>
-            <p className="text-gray-500 mt-2">Manage your team's information</p>
+            <h1 className="text-2xl font-semibold text-white">Team Members</h1>
+            <p className="text-gray-400 mt-1 text-sm">Manage your team's information</p>
           </div>
 
           <div className="flex gap-4">
-            <Button variant="outline" onClick={exportToCSV}>
+            <Button 
+              variant="outline" 
+              onClick={exportToCSV}
+              className="bg-transparent border-white/10 text-white hover:bg-white/5"
+            >
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
@@ -229,9 +234,9 @@ export default function Members() {
               <DialogTrigger asChild>
                 <Button className="bg-[#DC2626] hover:bg-[#DC2626]/90">Add Team Member</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-[#1A1F2C] dark:border-white/10">
                 <DialogHeader>
-                  <DialogTitle>{editingMember ? 'Edit Team Member' : 'Add New Team Member'}</DialogTitle>
+                  <DialogTitle className="text-white">{editingMember ? 'Edit Team Member' : 'Add New Team Member'}</DialogTitle>
                 </DialogHeader>
                 <AddMemberForm 
                   onSubmit={editingMember ? handleUpdate : handleAddMember}
@@ -242,22 +247,22 @@ export default function Members() {
           </div>
         </div>
 
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div className="rounded-lg overflow-hidden border border-white/10 bg-[#1A1F2C]">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Picture</TableHead>
-                <TableHead>Real Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>IGN</TableHead>
-                <TableHead>Game Role</TableHead>
-                <TableHead>Discord ID</TableHead>
-                <TableHead>Actions</TableHead>
+              <TableRow className="border-white/10 hover:bg-white/5">
+                <TableHead className="text-gray-400">Picture</TableHead>
+                <TableHead className="text-gray-400">Real Name</TableHead>
+                <TableHead className="text-gray-400">Email</TableHead>
+                <TableHead className="text-gray-400">IGN</TableHead>
+                <TableHead className="text-gray-400">Game Role</TableHead>
+                <TableHead className="text-gray-400">Discord ID</TableHead>
+                <TableHead className="text-gray-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {members.map((member) => (
-                <TableRow key={member.id}>
+                <TableRow key={member.id} className="border-white/10 hover:bg-white/5">
                   <TableCell>
                     {member.picture ? (
                       <img
@@ -266,23 +271,23 @@ export default function Members() {
                         className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
                         {member.real_name.charAt(0)}
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{member.real_name}</TableCell>
-                  <TableCell>{member.email}</TableCell>
-                  <TableCell>{member.ign}</TableCell>
-                  <TableCell className="capitalize">{member.game_role}</TableCell>
-                  <TableCell>{member.discord_id}</TableCell>
+                  <TableCell className="font-medium text-white">{member.real_name}</TableCell>
+                  <TableCell className="text-gray-300">{member.email}</TableCell>
+                  <TableCell className="text-gray-300">{member.ign}</TableCell>
+                  <TableCell className="capitalize text-gray-300">{member.game_role}</TableCell>
+                  <TableCell className="text-gray-300">{member.discord_id}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button 
                         variant="ghost" 
                         size="icon"
                         onClick={() => handleEdit(member)}
-                        className="text-[#DC2626] hover:text-[#DC2626]/90 hover:bg-[#DC2626]/10"
+                        className="text-gray-400 hover:text-white hover:bg-white/10"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -290,7 +295,7 @@ export default function Members() {
                         variant="ghost"
                         size="icon"
                         onClick={() => confirmDelete(member)}
-                        className="text-[#DC2626] hover:text-[#DC2626]/90 hover:bg-[#DC2626]/10"
+                        className="text-gray-400 hover:text-[#DC2626] hover:bg-[#DC2626]/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -300,7 +305,7 @@ export default function Members() {
               ))}
               {!isLoading && members.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-400">
                     No team members found. Add your first member!
                   </TableCell>
                 </TableRow>
