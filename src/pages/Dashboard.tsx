@@ -1,6 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, Calendar, TrendingUp, Bell, Search } from "lucide-react";
+import { Users, FileText, Calendar, TrendingUp } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import {
   BarChart,
   Bar,
@@ -125,28 +126,10 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header Section */}
-        <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:space-y-0">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Welcome back! Here's an overview of your team's activity.
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                className="pl-8 w-[200px] bg-white dark:bg-gray-800"
-              />
-            </div>
-            <button className="relative p-2 rounded-full bg-gray-100 dark:bg-gray-800">
-              <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-              <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-red-500" />
-            </button>
-          </div>
-        </div>
+        <PageHeader 
+          title="Dashboard"
+          description="Welcome back! Here's an overview of your team's activity."
+        />
 
         {/* Stats Cards */}
         <div className="grid gap-6 md:grid-cols-3">
