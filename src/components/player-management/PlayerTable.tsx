@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { FileText, Pencil, Trash } from "lucide-react";
 import {
@@ -28,49 +29,50 @@ export const PlayerTable = ({
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return "bg-green-100 text-green-700";
+        return "bg-green-500/20 text-green-400 border border-green-500/30";
       case 'inactive':
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
       case 'suspended':
-        return "bg-red-100 text-red-700";
+        return "bg-red-500/20 text-red-400 border border-red-500/30";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-500/20 text-gray-400 border border-gray-500/30";
     }
   };
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="rounded-md border border-white/10 overflow-x-auto neo-blur">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="whitespace-nowrap">IGN</TableHead>
-            <TableHead className="whitespace-nowrap">Mobile</TableHead>
-            <TableHead className="whitespace-nowrap">Discord ID</TableHead>
-            <TableHead className="whitespace-nowrap">Leave Days</TableHead>
-            <TableHead className="whitespace-nowrap">Absent Days</TableHead>
-            <TableHead className="whitespace-nowrap">NOC Days</TableHead>
-            <TableHead className="whitespace-nowrap">Current Month</TableHead>
-            <TableHead className="whitespace-nowrap">Status</TableHead>
-            <TableHead className="whitespace-nowrap">Actions</TableHead>
+          <TableRow className="border-white/10 hover:bg-transparent">
+            <TableHead className="text-gray-400">IGN</TableHead>
+            <TableHead className="text-gray-400">Mobile</TableHead>
+            <TableHead className="text-gray-400">Discord ID</TableHead>
+            <TableHead className="text-gray-400">Leave Days</TableHead>
+            <TableHead className="text-gray-400">Absent Days</TableHead>
+            <TableHead className="text-gray-400">NOC Days</TableHead>
+            <TableHead className="text-gray-400">Current Month</TableHead>
+            <TableHead className="text-gray-400">Status</TableHead>
+            <TableHead className="text-gray-400">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {players?.map((player) => (
-            <TableRow key={player.id} className="hover:bg-gray-50">
-              <TableCell className="font-medium">{player.ign}</TableCell>
-              <TableCell>{player.phone}</TableCell>
-              <TableCell>{player.discord_id}</TableCell>
-              <TableCell>{player.leave_days || 0}</TableCell>
-              <TableCell>{player.absent_days || 0}</TableCell>
-              <TableCell>{player.noc_days || 0}</TableCell>
-              <TableCell>
+            <TableRow 
+              key={player.id} 
+              className="border-white/10 hover:bg-white/[0.02] transition-colors duration-200"
+            >
+              <TableCell className="font-medium text-white">{player.ign}</TableCell>
+              <TableCell className="text-gray-300">{player.phone}</TableCell>
+              <TableCell className="text-gray-300">{player.discord_id}</TableCell>
+              <TableCell className="text-gray-300">{player.leave_days || 0}</TableCell>
+              <TableCell className="text-gray-300">{player.absent_days || 0}</TableCell>
+              <TableCell className="text-gray-300">{player.noc_days || 0}</TableCell>
+              <TableCell className="text-gray-300">
                 L: {player.current_month_leaves || 0} A: {player.current_month_absents || 0}
               </TableCell>
               <TableCell>
                 <span
-                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                    player.status || 'active'
-                  )}`}
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(player.status || 'active')}`}
                 >
                   {player.status || 'Active'}
                 </span>
@@ -81,32 +83,25 @@ export const PlayerTable = ({
                     variant="ghost" 
                     size="icon"
                     onClick={() => onEditStatus(player.id, player.status || 'Active')}
+                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
                   >
-                    <Pencil className="h-4 w-4 text-blue-600" />
+                    <Pencil className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    onClick={() => onEditStats(player.id, {
-                      leaveDays: player.leave_days || 0,
-                      absentDays: player.absent_days || 0,
-                      nocDays: player.noc_days || 0,
-                      currentMonthLeaves: player.current_month_leaves || 0,
-                      currentMonthAbsents: player.current_month_absents || 0,
-                      totalLeaveCount: player.leave_days || 0,
-                      totalAbsentCount: player.absent_days || 0,
-                      totalNOCCount: player.noc_days || 0,
-                      status: player.status || 'Active'
-                    })}
+                    onClick={() => onEditStats(player.id, metrics[player.id])}
+                    className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
                   >
-                    <FileText className="h-4 w-4 text-green-600" />
+                    <FileText className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => onDelete(player.id)}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                   >
-                    <Trash className="h-4 w-4 text-red-600" />
+                    <Trash className="h-4 w-4" />
                   </Button>
                 </div>
               </TableCell>
