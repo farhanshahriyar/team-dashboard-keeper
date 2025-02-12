@@ -1,3 +1,4 @@
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -88,9 +89,13 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel className="text-white">Email Address</FormLabel>
               <FormControl>
-                <Input placeholder="Email" {...field} />
+                <Input 
+                  placeholder="Email" 
+                  {...field} 
+                  className="bg-background/50 border-white/10 text-white placeholder:text-white/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -102,9 +107,13 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="real_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Real Name</FormLabel>
+              <FormLabel className="text-white">Real Name</FormLabel>
               <FormControl>
-                <Input placeholder="Real Name" {...field} />
+                <Input 
+                  placeholder="Real Name" 
+                  {...field} 
+                  className="bg-background/50 border-white/10 text-white placeholder:text-white/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -116,9 +125,13 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="birthdate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Birthdate</FormLabel>
+              <FormLabel className="text-white">Birthdate</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input 
+                  type="date" 
+                  {...field} 
+                  className="bg-background/50 border-white/10 text-white placeholder:text-white/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -130,9 +143,13 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Phone Number</FormLabel>
+              <FormLabel className="text-white">Phone Number</FormLabel>
               <FormControl>
-                <Input placeholder="Phone Number" {...field} />
+                <Input 
+                  placeholder="Phone Number" 
+                  {...field} 
+                  className="bg-background/50 border-white/10 text-white placeholder:text-white/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -144,9 +161,13 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="ign"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>IGN</FormLabel>
+              <FormLabel className="text-white">IGN</FormLabel>
               <FormControl>
-                <Input placeholder="In-Game Name" {...field} />
+                <Input 
+                  placeholder="In-Game Name" 
+                  {...field} 
+                  className="bg-background/50 border-white/10 text-white placeholder:text-white/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -158,14 +179,14 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="game_role"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Game Role</FormLabel>
+              <FormLabel className="text-white">Game Role</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background/50 border-white/10 text-white">
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
+                <SelectContent className="bg-background border-white/10">
                   <SelectItem value="duelist">Duelist</SelectItem>
                   <SelectItem value="sentinel">Sentinel</SelectItem>
                   <SelectItem value="initiator">Initiator</SelectItem>
@@ -182,9 +203,13 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="discord_id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Discord ID</FormLabel>
+              <FormLabel className="text-white">Discord ID</FormLabel>
               <FormControl>
-                <Input placeholder="Discord ID" {...field} />
+                <Input 
+                  placeholder="Discord ID" 
+                  {...field} 
+                  className="bg-background/50 border-white/10 text-white placeholder:text-white/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -196,9 +221,13 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="facebook"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Facebook Link</FormLabel>
+              <FormLabel className="text-white">Facebook Link</FormLabel>
               <FormControl>
-                <Input placeholder="Facebook Profile URL" {...field} />
+                <Input 
+                  placeholder="Facebook Profile URL" 
+                  {...field} 
+                  className="bg-background/50 border-white/10 text-white placeholder:text-white/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -210,16 +239,20 @@ export function AddMemberForm({ onSubmit, initialData }: AddMemberFormProps) {
           name="picture"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Picture URL</FormLabel>
+              <FormLabel className="text-white">Picture URL</FormLabel>
               <FormControl>
-                <Input placeholder="Picture URL" {...field} />
+                <Input 
+                  placeholder="Picture URL" 
+                  {...field} 
+                  className="bg-background/50 border-white/10 text-white placeholder:text-white/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full bg-[#DC2626] hover:bg-[#DC2626]/90">
           {initialData ? 'Update Member' : 'Add Member'}
         </Button>
       </form>
