@@ -12,7 +12,7 @@ import {
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,13 +70,12 @@ const menuItems = [
   },
 ];
 
-export function DashboardSidebar() {
+const SidebarNav = () => {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [isOpen, setIsOpen] = useState(false);
   const [profile, setProfile] = useState<{
     email?: string;
     display_name?: string;
@@ -122,7 +121,7 @@ export function DashboardSidebar() {
     }
   };
 
-  const SidebarContent = () => (
+  return (
     <div className="flex flex-col h-full">
       <div className="p-4">
         <DropdownMenu>
@@ -173,7 +172,6 @@ export function DashboardSidebar() {
               <Link
                 key={item.title}
                 to={item.path}
-                onClick={() => isMobile && setIsOpen(false)}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group ${
                   isActive 
                     ? "bg-primary/10 text-primary" 
@@ -195,6 +193,11 @@ export function DashboardSidebar() {
       </div>
     </div>
   );
+};
+
+export function DashboardSidebar() {
+  const isMobile = useIsMobile();
+  const [isOpen, setIsOpen] = useState(false);
 
   if (isMobile) {
     return (
@@ -210,7 +213,7 @@ export function DashboardSidebar() {
         
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetContent side="left" className="p-0 w-64 bg-background/95 backdrop-blur-xl">
-            <SidebarContent />
+            <SidebarNav />
           </SheetContent>
         </Sheet>
       </>
@@ -219,11 +222,11 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar className="hidden md:block border-r border-border/10 bg-background/95 backdrop-blur-xl min-h-screen w-64">
-      <SidebarContent className="flex flex-col h-full">
+      <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarContent />
+              <SidebarNav />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
