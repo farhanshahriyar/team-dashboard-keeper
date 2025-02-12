@@ -16,6 +16,7 @@ import Announcements from "./pages/Announcements";
 import Tournaments from "./pages/Tournaments";
 import MatchHistory from "./pages/MatchHistory";
 import Attendance from "./pages/Attendance";
+import AttendanceLimits from "./pages/AttendanceLimits";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Attendance />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance-limits"
+              element={
+                <ProtectedRoute>
+                  <AttendanceLimits />
                 </ProtectedRoute>
               }
             />
