@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -31,35 +31,45 @@ const AttendanceLimits = () => {
     },
   });
 
-  const { data: limits, isLoading: loadingLimits } = useQuery({
-    queryKey: ['attendance-limits', format(date, 'yyyy-MM')],
+  const { data: attendance, isLoading: loadingAttendance, refetch: refetchAttendance } = useQuery({
+    queryKey: ['daily-attendance', format(date, 'yyyy-MM')],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('attendance_limits')
+        .from('daily_attendance')
         .select('*')
-        .gte('month', format(date, 'yyyy-MM-01'))
-        .lt('month', format(new Date(date.getFullYear(), date.getMonth() + 1, 1), 'yyyy-MM-dd'));
+        .gte('date', format(startOfMonth(date), 'yyyy-MM-dd'))
+        .lte('date', format(endOfMonth(date), 'yyyy-MM-dd'));
       
       if (error) throw error;
-      
-      // Check for exceeded limits and show notifications
-      data.forEach(limit => {
-        if (limit.exceeds_limit) {
-          const memberName = members?.find(m => m.id === limit.team_member_id)?.real_name;
-          toast({
-            title: "Leave Limit Exceeded",
-            description: `${memberName} has exceeded the monthly leave limit.`,
-            variant: "destructive",
-          });
-        }
-      });
-      
       return data;
     },
     enabled: !!members,
   });
 
-  if (loadingMembers || loadingLimits) {
+  // Subscribe to real-time changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('attendance-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_attendance',
+          filter: `date=gte.${format(startOfMonth(date), 'yyyy-MM-dd')}&date=lte.${format(endOfMonth(date), 'yyyy-MM-dd')}`,
+        },
+        () => {
+          refetchAttendance();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [date, refetchAttendance]);
+
+  if (loadingMembers || loadingAttendance) {
     return (
       <DashboardLayout>
         <div>Loading...</div>
@@ -96,7 +106,7 @@ const AttendanceLimits = () => {
 
         <AttendanceLimitsTable 
           members={members || []}
-          limits={limits || []}
+          attendance={attendance || []}
           currentMonth={date}
         />
       </div>

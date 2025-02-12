@@ -9,30 +9,45 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 
 type TeamMember = Database['public']['Tables']['team_members']['Row'];
-type AttendanceLimit = Database['public']['Tables']['attendance_limits']['Row'];
+type DailyAttendance = Database['public']['Tables']['daily_attendance']['Row'];
 
 interface AttendanceLimitsTableProps {
   members: TeamMember[];
-  limits: AttendanceLimit[];
+  attendance: DailyAttendance[];
   currentMonth: Date;
 }
 
-export function AttendanceLimitsTable({ members, limits, currentMonth }: AttendanceLimitsTableProps) {
-  const getMemberLimits = (memberId: string) => {
-    return limits.find(limit => 
-      limit.team_member_id === memberId && 
-      format(new Date(limit.month), 'yyyy-MM') === format(currentMonth, 'yyyy-MM')
+export function AttendanceLimitsTable({ members, attendance, currentMonth }: AttendanceLimitsTableProps) {
+  const getMemberAttendance = (memberId: string) => {
+    const memberAttendance = attendance.filter(a => 
+      a.team_member_id === memberId &&
+      new Date(a.date) >= startOfMonth(currentMonth) &&
+      new Date(a.date) <= endOfMonth(currentMonth)
     );
+
+    const leaveDays = memberAttendance.filter(a => a.status === 'leave').length;
+    const absentDays = memberAttendance.filter(a => a.status === 'absent').length;
+    const nocDays = memberAttendance.filter(a => a.status === 'noc').length;
+    
+    return {
+      leaveDays,
+      absentDays,
+      nocDays,
+    };
   };
 
   const getStatusColor = (days: number) => {
     if (days > 7) return "bg-red-500/20 text-red-500 border-red-500/30";
     if (days >= 5) return "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
     return "bg-green-500/20 text-green-500 border-green-500/30";
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
 
   return (
@@ -50,10 +65,9 @@ export function AttendanceLimitsTable({ members, limits, currentMonth }: Attenda
         </TableHeader>
         <TableBody>
           {members.map((member) => {
-            const limits = getMemberLimits(member.id);
-            const leaveDays = limits?.leave_days || 0;
-            const workingDays = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-            const presentDays = workingDays - (limits?.leave_days || 0) - (limits?.absent_days || 0) - (limits?.noc_days || 0);
+            const { leaveDays, absentDays, nocDays } = getMemberAttendance(member.id);
+            const totalDays = getDaysInMonth(currentMonth);
+            const presentDays = totalDays - leaveDays - absentDays - nocDays;
             
             return (
               <TableRow key={member.id} className="border-white/10">
@@ -64,13 +78,13 @@ export function AttendanceLimitsTable({ members, limits, currentMonth }: Attenda
                   {presentDays}
                 </TableCell>
                 <TableCell className="text-right text-white">
-                  {limits?.leave_days || 0}
+                  {leaveDays}
                 </TableCell>
                 <TableCell className="text-right text-white">
-                  {limits?.absent_days || 0}
+                  {absentDays}
                 </TableCell>
                 <TableCell className="text-right text-white">
-                  {limits?.noc_days || 0}
+                  {nocDays}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
