@@ -1,5 +1,5 @@
 
-import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy, History, ClipboardCheck, Menu } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, UserCog, LogOut, Settings, Megaphone, Trophy, History, ClipboardCheck, Menu, AlertCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -67,6 +67,11 @@ const menuItems = [
     title: "Attendance",
     path: "/attendance",
     icon: ClipboardCheck,
+  },
+  {
+    title: "Attendance Limits",
+    path: "/attendance-limits",
+    icon: AlertCircle,
   },
 ];
 

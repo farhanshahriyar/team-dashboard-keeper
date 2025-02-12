@@ -36,6 +36,50 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance_limits: {
+        Row: {
+          absent_days: number | null
+          created_at: string
+          exceeds_limit: boolean | null
+          id: string
+          leave_days: number | null
+          month: string
+          noc_days: number | null
+          team_member_id: string
+          user_id: string | null
+        }
+        Insert: {
+          absent_days?: number | null
+          created_at?: string
+          exceeds_limit?: boolean | null
+          id?: string
+          leave_days?: number | null
+          month: string
+          noc_days?: number | null
+          team_member_id: string
+          user_id?: string | null
+        }
+        Update: {
+          absent_days?: number | null
+          created_at?: string
+          exceeds_limit?: boolean | null
+          id?: string
+          leave_days?: number | null
+          month?: string
+          noc_days?: number | null
+          team_member_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_limits_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_attendance: {
         Row: {
           created_at: string
