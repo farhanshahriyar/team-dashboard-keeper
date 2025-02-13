@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, FileText, Calendar, TrendingUp, Bell } from "lucide-react";
@@ -27,7 +26,7 @@ const Dashboard = () => {
   const searchParams = new URLSearchParams(location.search);
   const searchQuery = searchParams.get('search') || '';
 
-  // Fetch team members with optimized configuration
+  // Fetch team members with corrected configuration
   const { 
     data: teamMembers, 
     isLoading: isLoadingMembers,
@@ -45,10 +44,10 @@ const Dashboard = () => {
       return data;
     },
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
-    cacheTime: 1000 * 60 * 30, // Keep data in cache for 30 minutes
+    gcTime: 1000 * 60 * 30, // Keep data in cache for 30 minutes (renamed from cacheTime)
   });
 
-  // Fetch NOC records with optimized configuration
+  // Fetch NOC records with corrected configuration
   const { 
     data: nocRecords,
     isLoading: isLoadingNOCs,
@@ -66,7 +65,7 @@ const Dashboard = () => {
       return data;
     },
     staleTime: 1000 * 60 * 5,
-    cacheTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 30, // Renamed from cacheTime
   });
 
   // Set up real-time subscription with optimized handlers
