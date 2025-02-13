@@ -1,20 +1,23 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PageHeaderProps {
   title: string;
   description?: string;
+  onSearch?: (query: string) => void;  // Added onSearch prop
 }
 
-export function PageHeader({ title, description }: PageHeaderProps) {
+export function PageHeader({ title, description, onSearch }: PageHeaderProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
+  const queryClient = useQueryClient();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,11 +30,30 @@ export function PageHeader({ title, description }: PageHeaderProps) {
     // Navigate to the same route but with search parameter
     navigate(`${location.pathname}?${searchParams.toString()}`);
     
+    // If onSearch prop is provided, call it
+    if (onSearch) {
+      onSearch(searchQuery.trim());
+    }
+
+    // Invalidate relevant queries to trigger a refetch with search params
+    queryClient.invalidateQueries({
+      predicate: (query) => 
+        query.queryKey[0] === 'team-members' ||
+        query.queryKey[0] === 'noc_records' ||
+        query.queryKey[0] === 'daily-attendance' ||
+        query.queryKey[0] === 'tournaments'
+    });
+    
     toast({
       title: "Search initiated",
       description: `Searching for "${searchQuery}"`,
     });
   };
+
+  // Reset search when route changes
+  useEffect(() => {
+    setSearchQuery('');
+  }, [location.pathname]);
 
   const handleNotificationClick = () => {
     toast({

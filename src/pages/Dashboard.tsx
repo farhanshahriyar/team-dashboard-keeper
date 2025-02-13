@@ -17,17 +17,23 @@ import { useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
+import { useLocation } from "react-router-dom";
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const searchQuery = searchParams.get('search') || '';
 
   // Fetch team members for total players count
   const { data: teamMembers, refetch: refetchTeamMembers } = useQuery({
-    queryKey: ['team_members'],
+    queryKey: ['team_members', searchQuery],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('team_members')
-        .select('*');
+        .select('*')
+        .or(`real_name.ilike.%${searchQuery}%,ign.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data;
@@ -36,11 +42,12 @@ const Dashboard = () => {
 
   // Fetch NOC records for other stats
   const { data: nocRecords, refetch } = useQuery({
-    queryKey: ['noc_records'],
+    queryKey: ['noc_records', searchQuery],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('noc_records')
         .select('*')
+        .or(`player_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -125,10 +132,14 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="flex flex-col gap-6">
         <PageHeader 
           title="Dashboard"
-          description="Welcome back! Here's an overview of your team's activity."
+          description="Welcome to your team dashboard"
+          onSearch={(query) => {
+            // The search is handled automatically through the URL params
+            // and query invalidation
+          }}
         />
 
         {/* Stats Cards */}
